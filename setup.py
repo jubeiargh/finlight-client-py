@@ -6,7 +6,7 @@ setup(
     description="Python client for the Finlight API",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    author="Your Name",
+    author="Ali Büyükkakac",
     author_email="ali@kakac.de",
     url="https://github.com/jubeiargh/finlight-client-py",
     packages=find_packages(),
