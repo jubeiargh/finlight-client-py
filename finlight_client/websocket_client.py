@@ -4,6 +4,7 @@ from threading import Thread, Event
 from time import sleep
 import json
 from datetime import datetime
+from .models import ApiConfig
 
 
 def datetime_decoder(dct):
@@ -18,14 +19,13 @@ def datetime_decoder(dct):
 
 
 class WebSocketClient:
-    def __init__(self, config):
+    def __init__(self, config: ApiConfig):
         self.config = config
         self.ws = None
         self.connected = False
         self.ping_interval = 8 * 60  # 8 minutes
         self.ping_thread = None
         self.stop_event = Event()
-
 
     def connect(self, request_payload, callback):
         def run():
@@ -54,14 +54,14 @@ class WebSocketClient:
                         print(f"Unknown action received: {action}")
                 except Exception as e:
                     print(f"Error processing message: {e}")
-                    
+
             def on_error(ws, err):
                 print(f"Error: {err}")
                 self.connected = False
 
             self.ws = websocket.WebSocketApp(
-                self.config["wss_url"],
-                header=[f"x-api-key: {self.config['api_key']}"],
+                self.config.wss_url,  # ✅ use dot access
+                header=[f"x-api-key: {self.config.api_key}"],
                 on_message=on_message,
                 on_open=on_open,
                 on_error=on_error,
@@ -82,7 +82,7 @@ class WebSocketClient:
             self.ws.close()
         else:
             print("WebSocket already disconnected.")
-            
+
     def start_ping(self):
         def ping():
             while not self.stop_event.is_set():
@@ -90,6 +90,7 @@ class WebSocketClient:
                     print("PING")
                     self.ws.send(json.dumps({"action": "ping"}))
                 sleep(self.ping_interval)
+
         self.ping_thread = Thread(target=ping, daemon=True)
         self.ping_thread.start()
 
