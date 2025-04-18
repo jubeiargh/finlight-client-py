@@ -23,7 +23,7 @@ class WebSocketClient:
         self.config = config
         self.ws = None
         self.connected = False
-        self.ping_interval = 8 * 60  # 8 minutes
+        self.ping_interval = 4 * 60  # 8 minutes
         self.ping_thread = None
         self.stop_event = Event()
 
