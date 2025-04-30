@@ -1,110 +1,117 @@
-import websocket
+import asyncio
+import contextlib
 import json
-from threading import Thread, Event
-from time import sleep
-import json
-from datetime import datetime
-from .models import ApiConfig
+import websockets
+from typing import Callable, Union
+from time import time
+from .models import ApiConfig, BasicArticle, Article, GetArticlesWebSocketParams
+import logging
 
-
-def datetime_decoder(dct):
-    for key, value in dct.items():
-        if isinstance(value, str):
-            try:
-                # Attempt to parse datetime strings
-                dct[key] = datetime.fromisoformat(value)
-            except ValueError:
-                pass  # Leave the value unchanged if not a valid datetime string
-    return dct
+logger = logging.getLogger("finlight-websocket-client")
+logger.setLevel(logging.DEBUG)
 
 
 class WebSocketClient:
-    def __init__(self, config: ApiConfig):
+    def __init__(
+        self,
+        config: ApiConfig,
+        ping_interval: int = 30,  # 30 seconds
+        pong_timeout: int = 60,
+        reconnect_delay: int = 1,
+    ):
         self.config = config
-        self.ws = None
-        self.connected = False
-        self.ping_interval = 4 * 60  # 8 minutes
-        self.ping_thread = None
-        self.stop_event = Event()
+        self.ping_interval = ping_interval
+        self.pong_timeout = pong_timeout
+        self.reconnect_delay = reconnect_delay
+        self._stop = False
 
-    def connect(self, request_payload, callback):
-        def run():
-            def on_open(ws):
-                print("Connection opened.")
-                self.connected = True
-                if request_payload:
-                    self.send_request(request_payload)
-                self.start_ping()
+    async def connect(
+        self,
+        request_payload: GetArticlesWebSocketParams,
+        on_article: Callable[[Union[BasicArticle, Article]], None],
+    ):
+        while not self._stop:
+            try:
+                logger.info("🔄 Attempting to connect...")
+                async with websockets.connect(
+                    self.config.wss_url,
+                    extra_headers={"x-api-key": self.config.api_key},
+                ) as ws:
+                    logger.info("✅ Connected.")
 
-            def on_close(ws, *args):
-                print("Connection closed.")
-                self.connected = False
-                self.stop_ping()
+                    self.last_pong_time = time()
 
-            def on_message(ws, msg):
-                try:
-                    message = json.loads(msg, object_hook=datetime_decoder)
-                    action = message.get("action")
+                    listen_task = asyncio.create_task(self._listen(ws, on_article))
+                    ping_task = asyncio.create_task(self._ping(ws))
+                    watchdog_task = asyncio.create_task(self._pong_watchdog(ws))
 
-                    if action == "pong":
-                        self.handle_pong()
-                    elif action == "sendArticle":
-                        self.receive_article(message, callback)
-                    else:
-                        print(f"Unknown action received: {action}")
-                except Exception as e:
-                    print(f"Error processing message: {e}")
+                    await ws.send(request_payload.model_dump_json())
 
-            def on_error(ws, err):
-                print(f"Error: {err}")
-                self.connected = False
+                    # Wait for either task to complete (or crash)
+                    done, pending = await asyncio.wait(
+                        [listen_task, ping_task, watchdog_task],
+                        return_when=asyncio.FIRST_EXCEPTION,
+                    )
 
-            self.ws = websocket.WebSocketApp(
-                self.config.wss_url,  # ✅ use dot access
-                header=[f"x-api-key: {self.config.api_key}"],
-                on_message=on_message,
-                on_open=on_open,
-                on_error=on_error,
-                on_close=on_close,
-            )
-            self.ws.run_forever()
+                    # Cancel the others safely
+                    for task in pending:
+                        task.cancel()
+                        with contextlib.suppress(asyncio.CancelledError):
+                            await task
+            except Exception as e:
+                logger.error(f"❌ Connection error: {e}")
 
-        Thread(target=run, daemon=True).start()
+            if not self._stop:
+                logger.info(f"🔁 Reconnecting in {self.reconnect_delay} seconds...")
+                await asyncio.sleep(self.reconnect_delay)
 
-    def send_request(self, payload):
-        if self.ws and self.connected:
-            self.ws.send(json.dumps(payload))
-        else:
-            print("Cannot send message: WebSocket not connected.")
-
-    def disconnect(self):
-        if self.ws and self.connected:
-            self.ws.close()
-        else:
-            print("WebSocket already disconnected.")
-
-    def start_ping(self):
-        def ping():
-            while not self.stop_event.is_set():
-                if self.ws and self.connected:
-                    print("PING")
-                    self.ws.send(json.dumps({"action": "ping"}))
-                sleep(self.ping_interval)
-
-        self.ping_thread = Thread(target=ping, daemon=True)
-        self.ping_thread.start()
-
-    def stop_ping(self):
-        self.stop_event.set()
-        if self.ping_thread:
-            self.ping_thread.join()
-
-    def receive_article(self, response, callback):
+    async def _listen(self, ws, on_article):
         try:
-            data = response.get("data", {})
-            callback(data)
+            async for message in ws:
+                await self._handle_message(message, on_article)
+        except websockets.exceptions.ConnectionClosed:
+            logger.warning("🔌 Server closed the connection.")
         except Exception as e:
-            print(f"Error processing article: {e}")
+            logger.error(f"🔻 Listen failed: {e}")
 
-    def handle_pong(self):
-        print("PONG")
+    async def _ping(self, ws):
+        while True:
+            await asyncio.sleep(self.ping_interval)
+            try:
+                print("→ Sending ping")
+                await ws.send(json.dumps({"action": "ping"}))
+            except Exception as e:
+                logger.error(f"❌ Ping send error: {e}")
+                try:
+                    await ws.close()
+                except:
+                    pass
+                raise ConnectionError("Ping failed, triggering reconnect") from e
+
+    async def _pong_watchdog(self, ws):
+        while True:
+            await asyncio.sleep(5)
+            if time() - self.last_pong_time > self.pong_timeout:
+                logger.warning("❌ No pong received in time — forcing reconnect.")
+                await ws.close()
+                break  # Exit watchdog to trigger reconnect
+
+    async def _handle_message(self, message: str, on_article):
+        try:
+            msg = json.loads(message)
+            action = msg.get("action")
+
+            if action == "pong":
+                print("← PONG received")
+                self.last_pong_time = time()
+            elif action == "sendArticle":
+                data = msg.get("data", {})
+                article = Article.model_validate(data)
+                on_article(article)
+            else:
+                logger.warning(f"⚠️ Unknown action: {action}")
+        except Exception as e:
+            logger.error(f"Error handling message: {e}")
+
+    def stop(self):
+        self._stop = True

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, AnyHttpUrl
 from typing import List, Optional, Literal
@@ -48,11 +49,20 @@ class GetArticlesParams(BaseModel):
         populate_by_name = True
 
 
+class GetArticlesWebSocketParams(BaseModel):
+    query: Optional[str] = Field(None, description="Search query string")
+    sources: Optional[List[str]] = Field(
+        None, description="Optional list of article sources"
+    )
+    language: Optional[str] = Field(
+        None, description="Language filter, e.g., 'en', 'de'"
+    )
+
+
 class BasicArticle(BaseModel):
     link: str
     title: str
-    publishDate: str
-    authors: str
+    publishDate: datetime
     source: str
     language: str
     sentiment: Optional[str] = None
