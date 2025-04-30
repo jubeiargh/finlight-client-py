@@ -57,6 +57,7 @@ class GetArticlesWebSocketParams(BaseModel):
     language: Optional[str] = Field(
         None, description="Language filter, e.g., 'en', 'de'"
     )
+    extended: bool = Field(False, description="Whether to return full article details")
 
 
 class BasicArticle(BaseModel):
