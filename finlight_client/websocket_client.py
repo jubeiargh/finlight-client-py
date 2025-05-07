@@ -1,7 +1,9 @@
 import asyncio
 import contextlib
 import json
-import websockets
+from websockets.client import connect
+from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
+
 from typing import Callable, Union
 from time import time
 from .models import ApiConfig, BasicArticle, Article, GetArticlesWebSocketParams
@@ -33,7 +35,7 @@ class WebSocketClient:
         while not self._stop:
             try:
                 logger.info("🔄 Attempting to connect...")
-                async with websockets.connect(
+                async with connect(
                     self.config.wss_url,
                     extra_headers={"x-api-key": self.config.api_key},
                 ) as ws:
@@ -69,7 +71,7 @@ class WebSocketClient:
         try:
             async for message in ws:
                 await self._handle_message(message, on_article)
-        except websockets.exceptions.ConnectionClosed:
+        except (ConnectionClosedOK, ConnectionClosedError):
             logger.warning("🔌 Server closed the connection.")
         except Exception as e:
             logger.error(f"🔻 Listen failed: {e}")
