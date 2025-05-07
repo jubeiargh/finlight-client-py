@@ -19,7 +19,7 @@ Finlight delivers real-time and historical financial news articles, enriched wit
 
 ```bash
 pip install finlight-client
-````
+```
 
 ---
 
@@ -99,25 +99,25 @@ if __name__ == "__main__":
 
 ### `client.articles.get_basic_articles(params)`
 
-* Fetch short-form articles with titles, links, etc.
+- Fetch short-form articles with titles, links, etc.
 
 ### `client.articles.get_extended_articles(params)`
 
-* Fetch full articles with summaries and full text.
+- Fetch full articles with summaries and full text.
 
 ### `client.websocket.connect(request_payload, on_article)`
 
-* Subscribe to a real-time feed of articles via WebSocket.
-* Payload: `GetArticlesWebSocketParams`
-* Callback: `on_article(article: Article)`
+- Subscribe to a real-time feed of articles via WebSocket.
+- Payload: `GetArticlesWebSocketParams`
+- Callback: `on_article(article: Article)`
 
 ---
 
 ## 🧯 Error Handling
 
-* HTTP errors raise detailed Python exceptions.
-* WebSocket disconnections trigger auto-reconnect unless stopped.
-* Logs are printed via the `finlight-websocket-client` logger.
+- HTTP errors raise detailed Python exceptions.
+- WebSocket disconnections trigger auto-reconnect unless stopped.
+- Logs are printed via the `finlight-websocket-client` logger.
 
 ---
 
@@ -136,9 +136,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file.
 
 ## 🔗 Resources
 
-* [Finlight API Docs](https://docs.finlight.me)
-* [GitHub Repo](https://github.com/jubeiargh/finlight-client-py)
-* [PyPI Package](https://pypi.org/project/finlight-client)
-
+- [Finlight API Docs](https://docs.finlight.me)
+- [GitHub Repo](https://github.com/jubeiargh/finlight-client-py)
+- [PyPI Package](https://pypi.org/project/finlight-client)
 
 ---
