@@ -27,6 +27,10 @@ class GetArticlesParams(BaseModel):
         "If you select sources then 'includeAllSources' is not necessary",
     )
 
+    excludeSources: Optional[List[str]] = Field(
+        None, description="Exclude specific sources, accepts multiple.\n"
+    )
+
     from_: Optional[str] = Field(
         None, alias="from", description="Start date in (YYYY-MM-DD) or ISO Date string"
     )
@@ -53,6 +57,9 @@ class GetArticlesWebSocketParams(BaseModel):
     query: Optional[str] = Field(None, description="Search query string")
     sources: Optional[List[str]] = Field(
         None, description="Optional list of article sources"
+    )
+    excludeSources: Optional[List[str]] = Field(
+        None, description="Optional list of article sources to exclude"
     )
     language: Optional[str] = Field(
         None, description="Language filter, e.g., 'en', 'de'"
