@@ -1,147 +1,144 @@
-# Finlight Client - Python Library
+# Finlight Client – Python Library
 
-<!-- ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/finlight-client)
-![PyPI](https://img.shields.io/pypi/v/finlight-client)
-![License](https://img.shields.io/github/license/jubeiargh/finlight-client) -->
+A Python client library for interacting with the [Finlight News API](https://finlight.me).  
+Finlight delivers real-time and historical financial news articles, enriched with sentiment analysis and market insights. This library makes it easy to integrate Finlight into your Python applications.
 
-A Python client library for interacting with the [Finlight News API](https://finlight.me). Finlight provides financial news articles, sentiment analysis, and market insights to help users stay updated on global financial trends. This library simplifies integration with the API, allowing developers to access articles and real-time data with ease.
+---
 
-## Features
+## ✨ Features
 
-- Fetch **basic articles** with metadata such as titles, authors, and links.
-- Retrieve **extended articles** with full content and summaries.
-- Stream articles in real-time using **WebSocket** connections.
-- Automatic retry for API requests with exponential backoff.
-- Fully type-annotated and Pythonic interface.
+- Fetch **basic** and **extended** articles via REST API.
+- Stream real-time news using **WebSocket**.
+- Built-in retry and timeout handling.
+- Fully type-annotated models using `pydantic`.
+- Lightweight and developer-friendly.
 
-## Installation
+---
 
-Install the package via pip:
+## 📦 Installation
 
 ```bash
 pip install finlight-client
-```
+````
 
-## Quick Start
+---
 
-### Basic Usage
+## 🚀 Quick Start
 
-```python
-from finlight_client import FinlightApi
-
-# Initialize the client
-config = {
-    "api_key": "your_api_key",  # Replace with your API key
-}
-client = FinlightApi(config)
-
-# Fetch basic articles
-params = {
-    "query": "financial market",
-    "from": "2024-01-01",
-    "to": "2024-01-31",
-    "language": "en",
-    "pageSize": 10,
-}
-response = client.articles.get_basic_articles(params)
-
-# Print the articles
-for article in response['articles']:
-    print(article['title'], article['publishDate'])  # publishDate is a datetime object
-```
-
-### Streaming Real-Time Articles
+### Fetching Articles via REST API
 
 ```python
-def on_message(article):
-    print(f"Received article: {article['title']}")
+from finlight_client import FinlightApi, ApiConfig
+from finlight_client.models import GetArticlesParams
 
-# Set up WebSocket client
-client.websocket.connect(
-    {"query": "finance", "language": "en", "extended": True},
-    on_message
-)
+def main():
+    client = FinlightApi(
+        config=ApiConfig(
+            api_key="your_api_key"
+        )
+    )
 
-# Keep the WebSocket running (use Ctrl+C to stop)
-import time
-try:
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("Disconnecting WebSocket...")
-    client.websocket.disconnect()
+    params = GetArticlesParams(query="Nvidia", language="en")
+    articles = client.articles.get_extended_articles(params=params)
+    print(articles)
+
+if __name__ == "__main__":
+    main()
 ```
 
-## Configuration Options
+---
 
-The `FinlightApi` client accepts the following configuration parameters:
+### Streaming Real-Time Articles via WebSocket
 
-| Parameter     | Type  | Description                               | Default                   |
-| ------------- | ----- | ----------------------------------------- | ------------------------- |
-| `api_key`     | `str` | Your API key for authenticating requests. | **Required**              |
-| `base_url`    | `str` | Base URL for API requests.                | `https://api.finlight.me` |
-| `timeout`     | `int` | Timeout for API requests in milliseconds. | `5000`                    |
-| `retry_count` | `int` | Number of retries for failed requests.    | `3`                       |
-| `wss_url`     | `str` | WebSocket server URL.                     | `wss://wss.finlight.me`   |
+```python
+import asyncio
+from finlight_client import FinlightApi, ApiConfig
+from finlight_client.models import GetArticlesWebSocketParams
 
-## API Methods
+def on_article(article):
+    print("📨 Received article:", article.title)
 
-### Articles
+async def main():
+    client = FinlightApi(
+        config=ApiConfig(
+            api_key="your_api_key"
+        )
+    )
 
-1. **Fetch Basic Articles**
+    payload = GetArticlesWebSocketParams(
+        sources=["www.reuters.com"],
+        language="en"
+    )
 
-   Fetch articles with metadata like title, author, and source.
+    await client.websocket.connect(
+        request_payload=payload,
+        on_article=on_article
+    )
 
-   ```python
-   client.articles.get_basic_articles(params)
-   ```
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
-   - **Parameters**:
-     - `query`: Search query string.
-     - `from`: Start date in `YYYY-MM-DD` format.
-     - `to`: End date in `YYYY-MM-DD` format.
-     - `language`: Language filter (default: `en`).
-     - `pageSize`: Number of results per page (1-1000).
-     - `page`: Page number.
+---
 
-2. **Fetch Extended Articles**
+## ⚙️ Configuration
 
-   Fetch articles with full content and summaries.
+`ApiConfig` accepts the following parameters:
 
-   ```python
-   client.articles.get_extended_articles(params)
-   ```
+| Parameter     | Type  | Description                      | Default                   |
+| ------------- | ----- | -------------------------------- | ------------------------- |
+| `api_key`     | `str` | Your API key.                    | **Required**              |
+| `base_url`    | `str` | Base URL for REST API.           | `https://api.finlight.me` |
+| `wss_url`     | `str` | WebSocket server URL.            | `wss://wss.finlight.me`   |
+| `timeout`     | `int` | Timeout for requests (ms).       | `5000`                    |
+| `retry_count` | `int` | Max retries for failed requests. | `3`                       |
 
-### WebSocket
+---
 
-1. **Real-Time Article Streaming**
+## 📚 API Reference
 
-   Stream articles in real-time using WebSocket. Supports both basic and extended articles.
+### `client.articles.get_basic_articles(params)`
 
-   ```python
-   client.websocket.connect(request_payload, on_message)
-   ```
+* Fetch short-form articles with titles, links, etc.
 
-   - **Parameters**:
-     - `query`: Search query string.
-     - `language`: Language filter (default: `en`).
-     - `extended`: Boolean to enable full content.
+### `client.articles.get_extended_articles(params)`
 
-## Error Handling
+* Fetch full articles with summaries and full text.
 
-- HTTP errors are raised as exceptions with detailed messages.
-- WebSocket errors are logged to the console.
+### `client.websocket.connect(request_payload, on_article)`
 
-### Contributing
+* Subscribe to a real-time feed of articles via WebSocket.
+* Payload: `GetArticlesWebSocketParams`
+* Callback: `on_article(article: Article)`
 
-Contributions are welcome! Please open an issue or submit a pull request.
+---
 
-## License
+## 🧯 Error Handling
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+* HTTP errors raise detailed Python exceptions.
+* WebSocket disconnections trigger auto-reconnect unless stopped.
+* Logs are printed via the `finlight-websocket-client` logger.
 
-## Resources
+---
 
-- [Finlight API Documentation](https://docs.finlight.me)
-- [PyPI Package](https://pypi.org/project/finlight-client)
-- [GitHub Repository](https://github.com/jubeiargh/finlight-client-py)
+## 🤝 Contributing
+
+Pull requests and issues are welcome!
+Please ensure any contributions are well tested and documented.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file.
+
+---
+
+## 🔗 Resources
+
+* [Finlight API Docs](https://docs.finlight.me)
+* [GitHub Repo](https://github.com/jubeiargh/finlight-client-py)
+* [PyPI Package](https://pypi.org/project/finlight-client)
+
+
+---
