@@ -15,7 +15,7 @@ class ApiConfig:
 
 
 class GetArticlesParams(BaseModel):
-    query: str = Field(..., description="Search query")
+    query: Optional[str] = Field(None, description="Search query")
 
     source: Optional[str] = Field(
         None, description="@deprecated => use sources\nsource of the articles"
