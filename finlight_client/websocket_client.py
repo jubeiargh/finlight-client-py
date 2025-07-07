@@ -4,9 +4,9 @@ import json
 from websockets.client import connect
 from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError
 
-from typing import Callable, Union
+from typing import Callable
 from time import time
-from .models import ApiConfig, BasicArticle, Article, GetArticlesWebSocketParams
+from .models import ApiConfig, Article, GetArticlesWebSocketParams
 import logging
 
 logger = logging.getLogger("finlight-websocket-client")
@@ -30,7 +30,7 @@ class WebSocketClient:
     async def connect(
         self,
         request_payload: GetArticlesWebSocketParams,
-        on_article: Callable[[Union[BasicArticle, Article]], None],
+        on_article: Callable[[Article], None],
     ):
         while not self._stop:
             try:
@@ -110,6 +110,9 @@ class WebSocketClient:
                 data = msg.get("data", {})
                 article = Article.model_validate(data)
                 on_article(article)
+            elif action == "error":
+                data = msg.get("data", {})
+                logger.error(f"Error handling message: {data}")
             else:
                 logger.warning(f"⚠️ Unknown action: {action}")
         except Exception as e:

@@ -1,29 +1,17 @@
 from .api_client import ApiClient
 from datetime import datetime
-from .models import BasicArticleResponse, ArticleResponse, GetArticlesParams
+from .models import ArticleResponse, GetArticlesParams
 
 
 class ArticleService:
     def __init__(self, api_client: ApiClient):
         self.api_client = api_client
 
-    def get_basic_articles(self, params: GetArticlesParams) -> BasicArticleResponse:
+    def fetch_articles(self, params: GetArticlesParams) -> ArticleResponse:
         response = self.api_client.request(
-            "GET",
-            "/v1/articles",
-            params=params.model_dump(by_alias=True, exclude_none=True),
-        )
-        response["articles"] = [
-            {**article, "publishDate": self._parse_date(article["publishDate"])}
-            for article in response.get("articles", [])
-        ]
-        return response
-
-    def get_extended_articles(self, params: GetArticlesParams) -> ArticleResponse:
-        response = self.api_client.request(
-            "GET",
-            "/v1/articles/extended",
-            params=params.model_dump(by_alias=True, exclude_none=True),
+            "POST",
+            "/v2/articles",
+            data=params.model_dump(by_alias=True, exclude_none=True),
         )
         response["articles"] = [
             {**article, "publishDate": self._parse_date(article["publishDate"])}

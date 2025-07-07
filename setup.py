@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="finlight-client",
-    version="0.5.1",
+    version="1.0.0",
     description="Python client for the Finlight API",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

@@ -31,6 +31,10 @@ class GetArticlesParams(BaseModel):
         None, description="Exclude specific sources, accepts multiple.\n"
     )
 
+    optInSources: Optional[List[str]] = Field(
+        None, description="Optional list of non default article sources to include"
+    )
+
     from_: Optional[str] = Field(
         None, alias="from", description="Start date in (YYYY-MM-DD) or ISO Date string"
     )
@@ -40,6 +44,18 @@ class GetArticlesParams(BaseModel):
     )
 
     language: Optional[str] = Field(None, description='Language, default is "en"')
+
+    tickers: Optional[List[str]] = Field(
+        None, description="List of tickers to search for"
+    )
+    includeEntities: bool = Field(
+        False, description="Include tagged companies in the result"
+    )
+    excludeEmptyContent: bool = Field(
+        False, description="Only return results that have content"
+    )
+
+    includeContent: bool = Field(False, description="Whether to return full article details")
 
     order: Optional[Literal["ASC", "DESC"]] = Field(None, description="Sort order")
 
@@ -61,13 +77,38 @@ class GetArticlesWebSocketParams(BaseModel):
     excludeSources: Optional[List[str]] = Field(
         None, description="Optional list of article sources to exclude"
     )
+    optInSources: Optional[List[str]] = Field(
+        None, description="Optional list of non default article sources to include"
+    )
     language: Optional[str] = Field(
         None, description="Language filter, e.g., 'en', 'de'"
     )
     extended: bool = Field(False, description="Whether to return full article details")
+    tickers: Optional[List[str]] = Field(
+        None, description="List of tickers to search for"
+    )
+    includeEntities: bool = Field(
+        False, description="Include tagged companies in the result"
+    )
+    excludeEmptyContent: bool = Field(
+        False, description="Only return results that have content"
+    )
 
 
-class BasicArticle(BaseModel):
+class Company(BaseModel):
+    companyId: int
+    confidence: Optional[float] = None
+    country: Optional[str] = None
+    exchange: Optional[str] = None
+    industry: Optional[str] = None
+    sector: Optional[str] = None
+    name: str
+    ticker: str
+    isin: Optional[str] = None
+    openfigi: Optional[str] = None
+
+
+class Article(BaseModel):
     link: str
     title: str
     publishDate: datetime
@@ -76,17 +117,9 @@ class BasicArticle(BaseModel):
     sentiment: Optional[str] = None
     confidence: Optional[float] = None
     summary: Optional[str] = None
-
-
-class Article(BasicArticle):
+    images: Optional[List[str]] = None
     content: Optional[str] = None
-
-
-class BasicArticleResponse(BaseModel):
-    status: str
-    page: int
-    pageSize: int
-    articles: List[BasicArticle]
+    companies: Optional[List[Company]] = None
 
 
 class ArticleResponse(BaseModel):
