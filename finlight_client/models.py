@@ -55,7 +55,9 @@ class GetArticlesParams(BaseModel):
         False, description="Only return results that have content"
     )
 
-    includeContent: bool = Field(False, description="Whether to return full article details")
+    includeContent: bool = Field(
+        False, description="Whether to return full article details"
+    )
 
     order: Optional[Literal["ASC", "DESC"]] = Field(None, description="Sort order")
 
@@ -127,3 +129,9 @@ class ArticleResponse(BaseModel):
     page: int
     pageSize: int
     articles: List[Article]
+
+
+class Source(BaseModel):
+    domain: str
+    isContentAvailable: bool
+    isDefaultSource: bool
