@@ -29,14 +29,15 @@ pip install finlight-client
 ### Fetch Articles via REST API
 
 ```python
-from finlight_client import ApiClient, ApiConfig
-from finlight_client.services import ArticleService
+from finlight_client import FinlightApi, ApiConfig
 from finlight_client.models import GetArticlesParams
 
 def main():
-    api_client = ApiClient(config=ApiConfig(api_key="your_api_key"))
-    service = ArticleService(api_client)
+    # Initialize the client
+    config = ApiConfig(api_key="your_api_key")
+    client = FinlightApi(config)
 
+    # Create query parameters
     params = GetArticlesParams(
         query="Nvidia",
         language="en",
@@ -44,10 +45,13 @@ def main():
         to="2024-12-31",
         includeContent=True
     )
-    response = service.fetch_articles(params=params)
+    
+    # Fetch articles
+    response = client.articles.fetch_articles(params=params)
 
-    for article in response.articles:
-        print(f"{article.publishDate} | {article.title}")
+    # Print results
+    for article in response['articles']:
+        print(f"{article['publishDate']} | {article['title']}")
 
 if __name__ == "__main__":
     main()
@@ -59,15 +63,18 @@ if __name__ == "__main__":
 
 ```python
 import asyncio
-from finlight_client.websocket_client import WebSocketClient
-from finlight_client.models import GetArticlesWebSocketParams, ApiConfig
+from finlight_client import FinlightApi, ApiConfig
+from finlight_client.models import GetArticlesWebSocketParams
 
 def on_article(article):
     print("📨 Received:", article.title)
 
 async def main():
-    ws_client = WebSocketClient(config=ApiConfig(api_key="your_api_key"))
+    # Initialize the client
+    config = ApiConfig(api_key="your_api_key")
+    client = FinlightApi(config)
 
+    # Create WebSocket parameters
     payload = GetArticlesWebSocketParams(
         query="Nvidia",
         sources=["www.reuters.com"],
@@ -75,7 +82,8 @@ async def main():
         extended=True,
     )
 
-    await ws_client.connect(
+    # Connect and listen for articles
+    await client.websocket.connect(
         request_payload=payload,
         on_article=on_article
     )
@@ -102,10 +110,15 @@ if __name__ == "__main__":
 
 ## 📚 API Overview
 
-### `ArticleService.fetch_articles(params: GetArticlesParams) -> ArticleResponse`
+### `ArticleService.fetch_articles(params: GetArticlesParams) -> dict`
 
 * Fetch articles with flexible filtering.
 * Automatically parses ISO date strings into `datetime`.
+
+### `SourcesService.get_sources() -> List[Source]`
+
+* Retrieve available news sources.
+* Returns list of sources with metadata about content availability.
 
 ### `WebSocketClient.connect(request_payload, on_article)`
 
@@ -123,6 +136,28 @@ if __name__ == "__main__":
 
 ---
 
+## 📖 Additional Examples
+
+### Fetch Available Sources
+
+```python
+from finlight_client import FinlightApi, ApiConfig
+
+def main():
+    config = ApiConfig(api_key="your_api_key")
+    client = FinlightApi(config)
+    
+    sources = client.sources.get_sources()
+    
+    for source in sources:
+        print(f"{source['domain']} - Content: {source['isContentAvailable']}")
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
 ## 🧰 Model Summary
 
 ### `GetArticlesParams`
@@ -131,7 +166,7 @@ Query parameters to filter articles, including:
 
 * `query`: Search text
 * `tickers`: List of ticker symbols
-* `sources`, `excludeSources`, `optInSources`
+* `sources`, `excludeSources`: Source filtering
 * `language`: e.g., `"en"`, `"de"`
 * `from_`, `to`: Date range (`YYYY-MM-DD` or ISO)
 * `includeContent`, `includeEntities`, `excludeEmptyContent`
