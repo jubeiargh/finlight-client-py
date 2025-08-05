@@ -1,8 +1,9 @@
 import hashlib
 import hmac
 import json
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Optional
+from .models import Article
 
 
 SIGNATURE_PREFIX = "sha256="
@@ -23,7 +24,7 @@ class WebhookService:
         signature: str,
         endpoint_secret: str,
         timestamp: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> Article:
         """
         Constructs and verifies a webhook event from the raw request data.
         
@@ -34,7 +35,7 @@ class WebhookService:
             timestamp: Optional timestamp from the X-Webhook-Timestamp header for replay protection
             
         Returns:
-            The verified webhook event as a dictionary
+            The verified article as an Article model instance
             
         Raises:
             WebhookVerificationError: If verification fails
@@ -88,12 +89,15 @@ class WebhookService:
             raise WebhookVerificationError("Webhook timestamp outside allowed tolerance")
     
     @staticmethod
-    def _parse_payload(raw_body: str) -> Dict[str, Any]:
-        """Parse the JSON payload."""
+    def _parse_payload(raw_body: str) -> Article:
+        """Parse the JSON payload and validate it as an Article."""
         try:
-            return json.loads(raw_body)
+            raw_data = json.loads(raw_body)
+            return Article.model_validate(raw_data)
         except json.JSONDecodeError:
             raise WebhookVerificationError("Invalid JSON payload")
+        except Exception as e:
+            raise WebhookVerificationError(f"Invalid article data: {str(e)}")
     
     @staticmethod
     def _compute_signature_with_timestamp(
