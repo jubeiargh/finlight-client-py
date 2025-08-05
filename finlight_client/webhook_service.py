@@ -1,0 +1,120 @@
+import hashlib
+import hmac
+import json
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
+
+
+SIGNATURE_PREFIX = "sha256="
+REPLAY_ATTACK_TOLERANCE_SECONDS = 5 * 60  # 5 minutes
+
+
+class WebhookVerificationError(Exception):
+    """Raised when webhook verification fails."""
+    pass
+
+
+class WebhookService:
+    """Service for verifying and constructing webhook events."""
+    
+    @staticmethod
+    def construct_event(
+        raw_body: str,
+        signature: str,
+        endpoint_secret: str,
+        timestamp: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Constructs and verifies a webhook event from the raw request data.
+        
+        Args:
+            raw_body: The raw request body as a string
+            signature: The signature from the X-Webhook-Signature header
+            endpoint_secret: The webhook endpoint secret
+            timestamp: Optional timestamp from the X-Webhook-Timestamp header for replay protection
+            
+        Returns:
+            The verified webhook event as a dictionary
+            
+        Raises:
+            WebhookVerificationError: If verification fails
+        """
+        normalized_signature = WebhookService._normalize_signature(signature)
+        
+        WebhookService._verify_signature(
+            raw_body, normalized_signature, endpoint_secret, timestamp
+        )
+        
+        if timestamp:
+            WebhookService._verify_timestamp(timestamp)
+        
+        return WebhookService._parse_payload(raw_body)
+    
+    @staticmethod
+    def _normalize_signature(signature: str) -> str:
+        """Remove the sha256= prefix from the signature if present."""
+        return signature.replace(SIGNATURE_PREFIX, "")
+    
+    @staticmethod
+    def _verify_signature(
+        payload: str,
+        signature: str,
+        secret: str,
+        timestamp: Optional[str] = None
+    ) -> None:
+        """Verify the webhook signature."""
+        if timestamp:
+            expected_signature = WebhookService._compute_signature_with_timestamp(
+                payload, secret, timestamp
+            )
+        else:
+            expected_signature = WebhookService._compute_signature(payload, secret)
+        
+        if not WebhookService._secure_compare(signature, expected_signature):
+            raise WebhookVerificationError("Invalid webhook signature")
+    
+    @staticmethod
+    def _verify_timestamp(timestamp: str) -> None:
+        """Verify the timestamp is within allowed tolerance."""
+        try:
+            webhook_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+        except ValueError:
+            raise WebhookVerificationError("Invalid timestamp format")
+        
+        current_time = datetime.now(timezone.utc)
+        time_difference = abs((current_time - webhook_time).total_seconds())
+        
+        if time_difference > REPLAY_ATTACK_TOLERANCE_SECONDS:
+            raise WebhookVerificationError("Webhook timestamp outside allowed tolerance")
+    
+    @staticmethod
+    def _parse_payload(raw_body: str) -> Dict[str, Any]:
+        """Parse the JSON payload."""
+        try:
+            return json.loads(raw_body)
+        except json.JSONDecodeError:
+            raise WebhookVerificationError("Invalid JSON payload")
+    
+    @staticmethod
+    def _compute_signature_with_timestamp(
+        payload: str,
+        secret: str,
+        timestamp: str
+    ) -> str:
+        """Compute signature with timestamp."""
+        message = f"{timestamp}.{payload}"
+        return WebhookService._compute_signature(message, secret)
+    
+    @staticmethod
+    def _compute_signature(payload: str, secret: str) -> str:
+        """Compute HMAC SHA256 signature."""
+        return hmac.new(
+            secret.encode('utf-8'),
+            payload.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+    
+    @staticmethod
+    def _secure_compare(a: str, b: str) -> bool:
+        """Perform constant-time string comparison."""
+        return hmac.compare_digest(a, b)
