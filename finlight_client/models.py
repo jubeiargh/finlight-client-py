@@ -59,6 +59,8 @@ class GetArticlesParams(BaseModel):
         False, description="Whether to return full article details"
     )
 
+    orderBy: Optional[Literal["publishDate", "createdAt"]] = Field(None, description="Order by")
+    
     order: Optional[Literal["ASC", "DESC"]] = Field(None, description="Sort order")
 
     pageSize: Optional[int] = Field(
@@ -97,6 +99,12 @@ class GetArticlesWebSocketParams(BaseModel):
     )
 
 
+class Listing(BaseModel):
+    ticker: str
+    exchangeCode: str
+    exchangeCountry: str
+
+
 class Company(BaseModel):
     companyId: int
     confidence: Optional[float] = None
@@ -108,6 +116,9 @@ class Company(BaseModel):
     ticker: str
     isin: Optional[str] = None
     openfigi: Optional[str] = None
+    primaryListing: Optional[Listing] = None
+    isins: Optional[List[str]] = None
+    otherListings: Optional[List[Listing]] = None
 
 
 class Article(BaseModel):

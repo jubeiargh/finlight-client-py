@@ -7,12 +7,12 @@ Finlight delivers real-time and historical financial news articles, enriched wit
 
 ## ✨ Features
 
-* Fetch **structured** news articles with date parsing and metadata.
-* Filter by **tickers**, **sources**, **languages**, and **date ranges**.
-* Stream **real-time** news updates via **WebSocket**.
-* Auto-reconnect and ping/pong watchdog for WebSocket.
-* Strongly typed models using `pydantic` and `dataclass`.
-* Lightweight and developer-friendly.
+- Fetch **structured** news articles with date parsing and metadata.
+- Filter by **tickers**, **sources**, **languages**, and **date ranges**.
+- Stream **real-time** news updates via **WebSocket**.
+- Auto-reconnect and ping/pong watchdog for WebSocket.
+- Strongly typed models using `pydantic` and `dataclass`.
+- Lightweight and developer-friendly.
 
 ---
 
@@ -45,7 +45,7 @@ def main():
         to="2024-12-31",
         includeContent=True
     )
-    
+
     # Fetch articles
     response = client.articles.fetch_articles(params=params)
 
@@ -112,27 +112,27 @@ if __name__ == "__main__":
 
 ### `ArticleService.fetch_articles(params: GetArticlesParams) -> dict`
 
-* Fetch articles with flexible filtering.
-* Automatically parses ISO date strings into `datetime`.
+- Fetch articles with flexible filtering.
+- Automatically parses ISO date strings into `datetime`.
 
 ### `SourcesService.get_sources() -> List[Source]`
 
-* Retrieve available news sources.
-* Returns list of sources with metadata about content availability.
+- Retrieve available news sources.
+- Returns list of sources with metadata about content availability.
 
 ### `WebSocketClient.connect(request_payload, on_article)`
 
-* Subscribe to live article updates.
-* Reconnects automatically on disconnects.
-* Pings the server every 30s to keep the connection alive.
+- Subscribe to live article updates.
+- Reconnects automatically on disconnects.
+- Pings the server every 30s to keep the connection alive.
 
 ---
 
 ## 🧯 Error Handling
 
-* Invalid date strings raise clear Python `ValueError`s.
-* REST and WebSocket exceptions are logged and managed.
-* WebSocket includes reconnect, watchdog, and ping/pong mechanisms.
+- Invalid date strings raise clear Python `ValueError`s.
+- REST and WebSocket exceptions are logged and managed.
+- WebSocket includes reconnect, watchdog, and ping/pong mechanisms.
 
 ---
 
@@ -146,9 +146,9 @@ from finlight_client import FinlightApi, ApiConfig
 def main():
     config = ApiConfig(api_key="your_api_key")
     client = FinlightApi(config)
-    
+
     sources = client.sources.get_sources()
-    
+
     for source in sources:
         print(f"{source['domain']} - Content: {source['isContentAvailable']}")
 
@@ -164,22 +164,22 @@ if __name__ == "__main__":
 
 Query parameters to filter articles, including:
 
-* `query`: Search text
-* `tickers`: List of ticker symbols
-* `sources`, `excludeSources`: Source filtering
-* `language`: e.g., `"en"`, `"de"`
-* `from_`, `to`: Date range (`YYYY-MM-DD` or ISO)
-* `includeContent`, `includeEntities`, `excludeEmptyContent`
-* `order`, `page`, `pageSize`
+- `query`: Search text
+- `tickers`: List of ticker symbols
+- `sources`, `excludeSources`: Source filtering
+- `language`: e.g., `"en"`, `"de"`
+- `from_`, `to`: Date range (`YYYY-MM-DD` or ISO)
+- `includeContent`, `includeEntities`, `excludeEmptyContent`
+- `orderBy`, `order`, `page`, `pageSize`
 
 ### `Article`
 
 Each article includes:
 
-* `title`, `link`, `publishDate`, `source`, `language`
-* `summary`, `content`, `sentiment`, `confidence`
-* `images`: List of image URLs
-* `companies`: List of tagged `Company` objects
+- `title`, `link`, `publishDate`, `source`, `language`
+- `summary`, `content`, `sentiment`, `confidence`
+- `images`: List of image URLs
+- `companies`: List of tagged `Company` objects
 
 ---
 
@@ -187,9 +187,9 @@ Each article includes:
 
 We welcome contributions and suggestions!
 
-* Fork this repo
-* Create a feature branch
-* Submit a pull request with tests if applicable
+- Fork this repo
+- Create a feature branch
+- Submit a pull request with tests if applicable
 
 ---
 
@@ -201,6 +201,6 @@ MIT License – see [LICENSE](LICENSE)
 
 ## 🔗 Resources
 
-* [Finlight API Documentation](https://docs.finlight.me)
-* [GitHub Repository](https://github.com/jubeiargh/finlight-client-py)
-* [PyPI Package](https://pypi.org/project/finlight-client)
+- [Finlight API Documentation](https://docs.finlight.me)
+- [GitHub Repository](https://github.com/jubeiargh/finlight-client-py)
+- [PyPI Package](https://pypi.org/project/finlight-client)
