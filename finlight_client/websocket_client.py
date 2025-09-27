@@ -11,10 +11,6 @@ import logging
 
 logger = logging.getLogger("finlight-websocket-client")
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logging.basicConfig(level=logging.DEBUG)
 
 class WebSocketClient:
     def __init__(
@@ -26,7 +22,7 @@ class WebSocketClient:
         max_reconnect_delay: float = 10.0,  # Cap at 10 seconds
         connection_lifetime: int = 115 * 60,  # 115 minutes (2h - 5m)
         on_close: Optional[Callable[[int, str], None]] = None,
-        resume_from: Optional[str] = None,  # Cursor for resuming
+        takeover: bool = False,  # Whether to takeover existing connections
     ):
         self.config = config
         self.ping_interval = ping_interval
@@ -36,7 +32,7 @@ class WebSocketClient:
         self.current_reconnect_delay = base_reconnect_delay
         self.connection_lifetime = connection_lifetime
         self.on_close = on_close  # Callback for close events
-        self.resume_from = resume_from  # Cursor for resuming
+        self.takeover = takeover  # Whether to takeover existing connections
         self._stop = False
         self.lease_id = None  # Store lease ID from admission
         self.connection_start_time = None  # Track when connection started
@@ -51,9 +47,16 @@ class WebSocketClient:
         while not self._stop:
             try:
                 logger.info("🔄 Attempting to connect...")
+                
+                # Prepare headers
+                headers = {"x-api-key": self.config.api_key}
+                if self.takeover:
+                    headers["x-takeover"] = "true"
+                    logger.info("🔄 Connecting with takeover=true")
+                
                 async with connect(
                     self.config.wss_url,
-                    extra_headers={"x-api-key": self.config.api_key},
+                    extra_headers=headers,
                 ) as ws:
                     logger.info("✅ Connected.")
                     
@@ -96,21 +99,12 @@ class WebSocketClient:
                             await task
 
             except InvalidStatusCode as e:
-                # Handle 429 responses with Retry-After headers
+                # Handle 429 responses - API Gateway WebSocket doesn't pass custom headers
                 if e.status_code == 429:
-                    retry_after = None
-                    if hasattr(e, 'response_headers'):
-                        retry_after_header = e.response_headers.get('retry-after')
-                        if retry_after_header:
-                            try:
-                                retry_after = int(retry_after_header)
-                                logger.warning(f"⏰ Server rejected connection (429) - retry after {retry_after}s")
-                                self.reconnect_at = time() + retry_after
-                            except ValueError:
-                                pass
-                    
-                    if not retry_after:
-                        logger.warning("⏰ Server rejected connection (429) - using default backoff")
+                    # Use fixed delay for 429 responses since we can't get server retry timing
+                    retry_after_seconds = 60  # Fixed 1 minute delay for capacity limits
+                    self.reconnect_at = time() + retry_after_seconds
+                    logger.warning(f"⏰ Server rejected connection (429)")
                 
                 logger.error(f"❌ Connection error (status {e.status_code}): {e}")
             except Exception as e:
