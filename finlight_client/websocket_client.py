@@ -2,15 +2,28 @@ import asyncio
 import contextlib
 import json
 from websockets.client import connect
-from websockets.exceptions import ConnectionClosedOK, ConnectionClosedError, InvalidStatusCode
+from websockets.exceptions import (
+    ConnectionClosedOK,
+    ConnectionClosedError,
+    InvalidStatusCode,
+)
 
 from typing import Callable, Optional
 from time import time
 from .models import ApiConfig, Article, GetArticlesWebSocketParams
 import logging
+import importlib.metadata
 
 logger = logging.getLogger("finlight-websocket-client")
 logger.setLevel(logging.DEBUG)
+
+try:
+    __version__ = importlib.metadata.version("finlight-client")
+except Exception:
+    __version__ = "unknown"
+
+CLIENT_VERSION = f"python/finlight-client@{__version__}"
+
 
 class WebSocketClient:
     def __init__(
@@ -36,7 +49,9 @@ class WebSocketClient:
         self._stop = False
         self.lease_id = None  # Store lease ID from admission
         self.connection_start_time = None  # Track when connection started
-        self.reconnect_at = None  # Timestamp when we can reconnect (for rate limits/blocks)
+        self.reconnect_at = (
+            None  # Timestamp when we can reconnect (for rate limits/blocks)
+        )
         self.client_nonce = None  # For idempotent handshake
 
     async def connect(
@@ -47,19 +62,22 @@ class WebSocketClient:
         while not self._stop:
             try:
                 logger.info("🔄 Attempting to connect...")
-                
+
                 # Prepare headers
-                headers = {"x-api-key": self.config.api_key}
+                headers = {
+                    "x-api-key": self.config.api_key,
+                    "x-client-version": CLIENT_VERSION,
+                }
                 if self.takeover:
                     headers["x-takeover"] = "true"
                     logger.info("🔄 Connecting with takeover=true")
-                
+
                 async with connect(
                     self.config.wss_url,
                     extra_headers=headers,
                 ) as ws:
                     logger.info("✅ Connected.")
-                    
+
                     # Reset backoff on successful connection
                     self._reset_backoff()
                     self.reconnect_at = None  # Clear any reconnectAt restriction
@@ -75,20 +93,25 @@ class WebSocketClient:
 
                     # Prepare first message with handshake fields
                     import uuid
+
                     self.client_nonce = str(uuid.uuid4())
-                    
+
                     # Create message with handshake fields
                     message_data = request_payload.model_dump()
-                    message_data['clientNonce'] = self.client_nonce
-                    if self.resume_from:
-                        message_data['resumeFrom'] = self.resume_from
-                    
+                    message_data["clientNonce"] = self.client_nonce
+
                     # Send article search request to $default route
                     await ws.send(json.dumps(message_data))
 
                     # Wait for any task to complete (including close detection and proactive rotation)
                     _, pending = await asyncio.wait(
-                        [listen_task, ping_task, watchdog_task, close_task, rotation_task],
+                        [
+                            listen_task,
+                            ping_task,
+                            watchdog_task,
+                            close_task,
+                            rotation_task,
+                        ],
                         return_when=asyncio.FIRST_COMPLETED,
                     )
 
@@ -105,7 +128,7 @@ class WebSocketClient:
                     retry_after_seconds = 60  # Fixed 1 minute delay for capacity limits
                     self.reconnect_at = time() + retry_after_seconds
                     logger.warning(f"⏰ Server rejected connection (429)")
-                
+
                 logger.error(f"❌ Connection error (status {e.status_code}): {e}")
             except Exception as e:
                 logger.error(f"❌ Connection error: {e}")
@@ -150,18 +173,18 @@ class WebSocketClient:
         """Wait for connection to close and handle the close event"""
         try:
             await ws.wait_closed()
-            
+
             close_code = ws.close_code or 1000
-            close_reason = ws.close_reason or 'Connection closed'
+            close_reason = ws.close_reason or "Connection closed"
             logger.info(f"🔌 Connection closed: {close_code} - {close_reason}")
-            
+
             if self.on_close:
                 try:
                     self.on_close(close_code, close_reason)
                 except Exception as callback_error:
                     logger.error(f"❌ Close callback error: {callback_error}")
-                    
-            # Handle specific close codes for reconnection logic  
+
+            # Handle specific close codes for reconnection logic
             if close_code == 1008:  # Policy violation (blocked user)
                 logger.warning("🚫 Connection rejected by server (blocked user)")
                 self._stop = True  # Stop reconnecting
@@ -174,7 +197,7 @@ class WebSocketClient:
                 logger.warning("🚫 User blocked - custom close code")
             elif close_code == 4003:  # Custom: Admin kick
                 logger.warning("👮 Admin kick - custom close code")
-                
+
         except Exception as e:
             logger.error(f"❌ Error waiting for close: {e}")
 
@@ -183,34 +206,37 @@ class WebSocketClient:
         try:
             # Wait for connection lifetime (115 minutes = 2h - 5m)
             await asyncio.sleep(self.connection_lifetime)
-            
+
             connection_age = time() - (self.connection_start_time or time())
-            logger.info(f"🔄 Proactive rotation after {connection_age/60:.1f} minutes (before 2h AWS limit)")
-            
+            logger.info(
+                f"🔄 Proactive rotation after {connection_age/60:.1f} minutes (before 2h AWS limit)"
+            )
+
             # Gracefully close the connection with custom code
             await ws.close(code=4000, reason="Proactive rotation")
-            
+
         except Exception as e:
             logger.error(f"❌ Error in proactive rotation: {e}")
 
     async def _handle_reconnect(self):
         """Handle reconnection with exponential backoff and reconnectAt respect"""
         now = time()
-        
+
         # Check if we need to wait due to rate limits/blocks
         if self.reconnect_at and now < self.reconnect_at:
             wait_time = self.reconnect_at - now
-            logger.info(f"⏰ Waiting {wait_time:.1f}s until reconnectAt before attempting reconnect")
+            logger.info(
+                f"⏰ Waiting {wait_time:.1f}s until reconnectAt before attempting reconnect"
+            )
             await asyncio.sleep(wait_time)
         else:
             # Regular exponential backoff
             logger.info(f"🔁 Reconnecting in {self.current_reconnect_delay:.1f}s...")
             await asyncio.sleep(self.current_reconnect_delay)
-            
+
             # Increase delay for next time (exponential backoff)
             self.current_reconnect_delay = min(
-                self.current_reconnect_delay * 2, 
-                self.max_reconnect_delay
+                self.current_reconnect_delay * 2, self.max_reconnect_delay
             )
 
     def _reset_backoff(self):
@@ -230,54 +256,64 @@ class WebSocketClient:
                 else:
                     logger.debug("← PONG received")
                 self.last_pong_time = time()
-                
+
             elif msg_action == "admit":
                 self.lease_id = msg.get("leaseId")
                 server_now = msg.get("serverNow")
                 client_nonce = msg.get("clientNonce")
-                logger.info(f"✅ Admitted (leaseId: {self.lease_id}, serverNow: {server_now})")
+                logger.info(
+                    f"✅ Admitted (leaseId: {self.lease_id}, serverNow: {server_now})"
+                )
                 if client_nonce and client_nonce != self.client_nonce:
-                    logger.warning(f"⚠️ Nonce mismatch: expected {self.client_nonce}, got {client_nonce}")
-                
+                    logger.warning(
+                        f"⚠️ Nonce mismatch: expected {self.client_nonce}, got {client_nonce}"
+                    )
+
             elif msg_action == "preempted":
                 reason = msg.get("reason", "unknown")
                 new_lease_id = msg.get("newLeaseId", "")
-                logger.warning(f"🔄 Connection preempted: {reason} (new lease: {new_lease_id})")
+                logger.warning(
+                    f"🔄 Connection preempted: {reason} (new lease: {new_lease_id})"
+                )
                 # Stop reconnecting - this connection was legitimately replaced
                 self._stop = True
                 await ws.close(code=1000, reason="Preempted by server")
-                
+
             elif msg_action == "sendArticle":
                 data = msg.get("data", {})
                 article = Article.model_validate(data)
                 on_article(article)
-                
+
             elif msg_action == "admin_kick":
                 retry_after = msg.get("retryAfter", 900000)  # 15 minutes default
                 retry_after_seconds = retry_after / 1000
                 self.reconnect_at = time() + retry_after_seconds
-                logger.warning(f"🚫 Admin kicked - retry after {retry_after_seconds:.0f}s")
+                logger.warning(
+                    f"🚫 Admin kicked - retry after {retry_after_seconds:.0f}s"
+                )
                 # Close with custom code and let reconnect logic handle the delay
-                await ws.close(code=4003, reason=f"Admin kick - retry after {retry_after}ms")
-                
+                await ws.close(
+                    code=4003, reason=f"Admin kick - retry after {retry_after}ms"
+                )
+
             elif msg_action == "error":
                 error_data = msg.get("data") or msg.get("error", "Unknown error")
                 logger.error(f"❌ Server error: {error_data}")
-                
+
                 # Check if it's a rate limit or blocked error
                 if "limit" in str(error_data).lower():
                     # Set reconnectAt for rate limits
                     self.reconnect_at = time() + 60  # Wait 1 minute for rate limits
                     await ws.close(code=4001, reason="Rate limited")
                 elif "blocked" in str(error_data).lower():
-                    # Set reconnectAt for blocked users  
+                    # Set reconnectAt for blocked users
                     self.reconnect_at = time() + 3600  # Wait 1 hour for blocks
                     await ws.close(code=4002, reason="User blocked")
-                
+
             else:
                 logger.warning(f"⚠️ Unknown message action: {msg_action}")
                 logger.debug(msg)
-                
+
         except Exception as e:
             logger.error(f"❌ Error handling message: {e}")
             logger.debug(f"Raw message: {message}")
