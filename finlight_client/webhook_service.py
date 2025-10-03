@@ -11,13 +11,21 @@ REPLAY_ATTACK_TOLERANCE_SECONDS = 5 * 60  # 5 minutes
 
 
 class WebhookVerificationError(Exception):
-    """Raised when webhook verification fails."""
+    """Raised when webhook verification fails.
+
+    This can occur due to invalid signatures, expired timestamps,
+    or malformed payloads.
+    """
     pass
 
 
 class WebhookService:
-    """Service for verifying and constructing webhook events."""
-    
+    """Service for securely receiving and verifying webhook events from Finlight.
+
+    Webhooks provide real-time notifications when new articles are published.
+    This service handles HMAC signature verification and replay attack protection.
+    """
+
     @staticmethod
     def construct_event(
         raw_body: str,
@@ -25,20 +33,40 @@ class WebhookService:
         endpoint_secret: str,
         timestamp: Optional[str] = None
     ) -> Article:
-        """
-        Constructs and verifies a webhook event from the raw request data.
-        
+        """Constructs and verifies a webhook event from raw request data.
+
+        Verifies the HMAC-SHA256 signature to ensure the webhook came from Finlight
+        and hasn't been tampered with. Optionally validates the timestamp to prevent
+        replay attacks (5 minute tolerance window).
+
         Args:
-            raw_body: The raw request body as a string
+            raw_body: The raw request body as a string (must be unparsed)
             signature: The signature from the X-Webhook-Signature header
-            endpoint_secret: The webhook endpoint secret
+            endpoint_secret: Your webhook endpoint secret from the Finlight dashboard
             timestamp: Optional timestamp from the X-Webhook-Timestamp header for replay protection
-            
+
         Returns:
-            The verified article as an Article model instance
-            
+            Article: The verified and parsed article object
+
         Raises:
             WebhookVerificationError: If verification fails
+
+        Example:
+            >>> # Flask webhook endpoint
+            >>> @app.route('/webhook', methods=['POST'])
+            >>> def webhook():
+            ...     raw_body = request.get_data(as_text=True)
+            ...     signature = request.headers.get('X-Webhook-Signature')
+            ...     timestamp = request.headers.get('X-Webhook-Timestamp')
+            ...
+            ...     try:
+            ...         article = WebhookService.construct_event(
+            ...             raw_body, signature, os.getenv('WEBHOOK_SECRET'), timestamp
+            ...         )
+            ...         print(f"New article: {article.title}")
+            ...         return '', 200
+            ...     except WebhookVerificationError:
+            ...         return '', 400
         """
         normalized_signature = WebhookService._normalize_signature(signature)
         
