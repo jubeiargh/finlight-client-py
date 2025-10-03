@@ -30,7 +30,7 @@ class WebSocketClient:
         self,
         config: ApiConfig,
         ping_interval: int = 25,  # 25 seconds (matches HEARTBEAT_MS)
-        pong_timeout: int = 60,
+        pong_timeout: int = 30,
         base_reconnect_delay: float = 0.5,  # Start with 500ms
         max_reconnect_delay: float = 10.0,  # Cap at 10 seconds
         connection_lifetime: int = 115 * 60,  # 115 minutes (2h - 5m)
