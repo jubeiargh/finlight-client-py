@@ -23,7 +23,7 @@ class SourcesService:
 
         Example:
             >>> sources = sources_service.get_sources()
-            >>> defaults = [s for s in sources if s.is_default_source]
+            >>> defaults = [s for s in sources if s.isDefaultSource]
             >>> print(f"Found {len(defaults)} default sources")
         """
         response = self.api_client.request(
@@ -31,4 +31,5 @@ class SourcesService:
             "/v2/sources",
         )
 
-        return response
+        # Parse response into Source models
+        return [Source.model_validate(source) for source in response]
