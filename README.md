@@ -56,8 +56,8 @@ def main():
     response = client.articles.fetch_articles(params=params)
 
     # Print results
-    for article in response['articles']:
-        print(f"{article['publishDate']} | {article['title']}")
+    for article in response.articles:
+        print(f"{article.publishDate} | {article.title}")
 
 if __name__ == "__main__":
     main()
@@ -188,7 +188,7 @@ def main():
     sources = client.sources.get_sources()
 
     for source in sources:
-        print(f"{source['domain']} - Content: {source['isContentAvailable']}")
+        print(f"{source.domain} - Content: {source.isContentAvailable}")
 
 if __name__ == "__main__":
     main()
