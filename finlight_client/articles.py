@@ -36,9 +36,9 @@ class ArticleService:
         Example:
             >>> params = GetArticlesParams(
             ...     tickers=['AAPL'],
-            ...     from_date='2024-01-01',
-            ...     include_content=True,
-            ...     page_size=20
+            ...     from_='2024-01-01',
+            ...     includeContent=True,
+            ...     pageSize=20
             ... )
             >>> response = article_service.fetch_articles(params)
             >>> print(f"Found {len(response.articles)} articles")
