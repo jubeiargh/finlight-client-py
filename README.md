@@ -284,6 +284,7 @@ Query parameters to filter articles:
 | `excludeSources`       | `List[str]`    | Exclude specific sources                           |
 | `optInSources`         | `List[str]`    | Include non-default sources                        |
 | `language`             | `str`          | Language filter (e.g., `"en"`, `"de"`)             |
+| `countries`            | `List[str]`    | Filter by country codes (e.g., `["US", "GB"]`)     |
 | `from_`                | `str`          | Start date (`YYYY-MM-DD` or ISO)                   |
 | `to`                   | `str`          | End date (`YYYY-MM-DD` or ISO)                     |
 | `includeContent`       | `bool`         | Include full article content (default: `False`)    |
@@ -306,6 +307,7 @@ Parameters for WebSocket subscriptions:
 | `excludeSources`       | `List[str]`    | Exclude specific sources                           |
 | `optInSources`         | `List[str]`    | Include non-default sources                        |
 | `language`             | `str`          | Language filter                                    |
+| `countries`            | `List[str]`    | Filter by country codes (e.g., `["US", "GB"]`)     |
 | `extended`             | `bool`         | Include full article details (default: `False`)    |
 | `includeEntities`      | `bool`         | Include tagged companies (default: `False`)        |
 | `excludeEmptyContent`  | `bool`         | Only articles with content (default: `False`)      |
