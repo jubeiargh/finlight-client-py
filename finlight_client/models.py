@@ -59,8 +59,10 @@ class GetArticlesParams(BaseModel):
         False, description="Whether to return full article details"
     )
 
-    orderBy: Optional[Literal["publishDate", "createdAt"]] = Field(None, description="Order by")
-    
+    orderBy: Optional[Literal["publishDate", "createdAt"]] = Field(
+        None, description="Order by"
+    )
+
     order: Optional[Literal["ASC", "DESC"]] = Field(None, description="Sort order")
 
     pageSize: Optional[int] = Field(
@@ -68,6 +70,10 @@ class GetArticlesParams(BaseModel):
     )
 
     page: Optional[int] = Field(None, ge=1, description="Page number")
+
+    countries: Optional[List[str]] = Field(
+        None, description="List of ISO 3166-1 alpha-2 country codes to filter articles"
+    )
 
     class Config:
         populate_by_name = True
@@ -96,6 +102,9 @@ class GetArticlesWebSocketParams(BaseModel):
     )
     excludeEmptyContent: bool = Field(
         False, description="Only return results that have content"
+    )
+    countries: Optional[List[str]] = Field(
+        None, description="List of ISO 3166-1 alpha-2 country codes to filter articles"
     )
 
 
