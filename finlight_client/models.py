@@ -93,11 +93,13 @@ class GetArticlesWebSocketParams(BaseModel):
     language: Optional[str] = Field(
         None, description="Language filter, e.g., 'en', 'de'"
     )
-    extended: bool = Field(False, description="Whether to return full article details")
+    extended: Optional[bool] = Field(
+        False, description="Whether to return full article details"
+    )
     tickers: Optional[List[str]] = Field(
         None, description="List of tickers to search for"
     )
-    includeEntities: bool = Field(
+    includeEntities: Optional[bool] = Field(
         False, description="Include tagged companies in the result"
     )
     excludeEmptyContent: bool = Field(

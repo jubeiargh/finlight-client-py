@@ -53,6 +53,8 @@ class WebSocketClient:
             None  # Timestamp when we can reconnect (for rate limits/blocks)
         )
         self.client_nonce = None  # For idempotent handshake
+        self.recent_article_links = set()  # Track recent article IDs to prevent duplicates
+        self.RECENT_ARTICLE_CACHE_SIZE = 10  # Maximum number of recent article IDs to track
 
     async def connect(
         self,
@@ -282,6 +284,21 @@ class WebSocketClient:
             elif msg_action == "sendArticle":
                 data = msg.get("data", {})
                 article = Article.model_validate(data)
+
+                # Skip if it's a duplicate article (e.g., last article resent on reconnect)
+                if article.link in self.recent_article_links:
+                    logger.debug(f"⏭️ Skipping duplicate article: {article.link}")
+                    return
+
+                # Track this article link
+                self.recent_article_links.add(article.link)
+
+                # Maintain cache size by removing oldest entry when limit is reached
+                if len(self.recent_article_links) > self.RECENT_ARTICLE_CACHE_SIZE:
+                    # Remove the first (oldest) item from the set
+                    oldest_link = next(iter(self.recent_article_links))
+                    self.recent_article_links.remove(oldest_link)
+
                 on_article(article)
 
             elif msg_action == "admin_kick":
