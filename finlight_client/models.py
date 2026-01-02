@@ -144,6 +144,7 @@ class Article(BaseModel):
     images: Optional[List[str]] = None
     content: Optional[str] = None
     companies: Optional[List[Company]] = None
+    createdAt: Optional[datetime] = None
 
 
 class ArticleResponse(BaseModel):
