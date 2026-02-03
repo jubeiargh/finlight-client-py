@@ -9,7 +9,7 @@ Finlight delivers real-time and historical financial news articles, enriched wit
 
 - Fetch **structured** news articles with date parsing and metadata.
 - Filter by **tickers**, **sources**, **languages**, and **date ranges**.
-- Stream **real-time** news updates via **WebSocket** with auto-reconnect.
+- Stream **real-time** news updates via **Enhanced** and **Raw WebSocket** with auto-reconnect.
 - **Webhook support** with HMAC signature verification and replay attack protection.
 - Advanced WebSocket features:
   - Exponential backoff reconnection strategy
@@ -100,6 +100,44 @@ if __name__ == "__main__":
 
 ---
 
+### Stream Raw Articles via WebSocket
+
+The Raw WebSocket delivers articles faster by skipping AI enrichment (no sentiment, confidence, or company tagging). It supports field-level filtering with `source:`, `title:`, and `summary:` fields.
+
+```python
+import asyncio
+from finlight_client import FinlightApi, ApiConfig, RawWebSocketOptions
+from finlight_client.models import GetRawArticlesWebSocketParams
+
+def on_article(article):
+    print("📨 Received:", article.title)
+
+async def main():
+    config = ApiConfig(api_key="your_api_key")
+    client = FinlightApi(
+        config,
+        raw_websocket_options=RawWebSocketOptions(
+            takeover=True
+        )
+    )
+
+    payload = GetRawArticlesWebSocketParams(
+        query="title:Nvidia",
+        sources=["www.reuters.com"],
+        language="en",
+    )
+
+    await client.raw_websocket.connect(
+        request_payload=payload,
+        on_article=on_article
+    )
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+---
+
 ## ⚙️ Configuration
 
 ### `ApiConfig`
@@ -116,17 +154,33 @@ Core API configuration:
 
 ### `FinlightApi` WebSocket Options
 
-Advanced WebSocket configuration (all optional):
+Advanced WebSocket configuration (all optional). You can use flat kwargs or option objects:
 
-| Parameter                        | Type       | Description                                  | Default      |
-| -------------------------------- | ---------- | -------------------------------------------- | ------------ |
-| `websocket_ping_interval`        | `int`      | Ping interval in seconds                     | `25`         |
-| `websocket_pong_timeout`         | `int`      | Pong timeout in seconds                      | `60`         |
-| `websocket_base_reconnect_delay` | `float`    | Initial reconnect delay in seconds           | `0.5`        |
-| `websocket_max_reconnect_delay`  | `float`    | Maximum reconnect delay in seconds           | `10.0`       |
-| `websocket_connection_lifetime`  | `int`      | Connection lifetime in seconds               | `6900` (115m)|
-| `websocket_takeover`             | `bool`     | Takeover existing connections                | `False`      |
-| `websocket_on_close`             | `Callable` | Callback for close events `(code, reason)`   | `None`       |
+```python
+# Using flat kwargs (Enhanced WebSocket only)
+client = FinlightApi(config, websocket_takeover=True)
+
+# Using option objects (Enhanced and Raw WebSocket)
+from finlight_client import WebSocketOptions, RawWebSocketOptions
+
+client = FinlightApi(
+    config,
+    websocket_options=WebSocketOptions(takeover=True),
+    raw_websocket_options=RawWebSocketOptions(takeover=True),
+)
+```
+
+Both `WebSocketOptions` and `RawWebSocketOptions` accept the same fields:
+
+| Field                    | Type       | Description                                  | Default      |
+| ------------------------ | ---------- | -------------------------------------------- | ------------ |
+| `ping_interval`          | `int`      | Ping interval in seconds                     | `25`         |
+| `pong_timeout`           | `int`      | Pong timeout in seconds                      | `60`         |
+| `base_reconnect_delay`   | `float`    | Initial reconnect delay in seconds           | `0.5`        |
+| `max_reconnect_delay`    | `float`    | Maximum reconnect delay in seconds           | `10.0`       |
+| `connection_lifetime`    | `int`      | Connection lifetime in seconds               | `6900` (115m)|
+| `takeover`               | `bool`     | Takeover existing connections                | `False`      |
+| `on_close`               | `Callable` | Callback for close events `(code, reason)`   | `None`       |
 
 ---
 
@@ -155,6 +209,14 @@ Subscribe to live article updates:
 - Pings the server every 25s to keep the connection alive
 - Proactively rotates connections before AWS 2-hour timeout
 - Optional connection takeover mode
+
+### `RawWebSocketClient.connect(request_payload, on_article)`
+
+Subscribe to live raw article updates (faster delivery, no AI enrichment):
+- Same reconnection and keepalive features as the enhanced WebSocket
+- Connects to `wss://wss.finlight.me/raw`
+- Returns `RawArticle` objects (no sentiment, confidence, or companies)
+- Supports field-level query filters: `source:`, `title:`, `summary:`
 
 ### `WebhookService.construct_event(raw_body, signature, endpoint_secret, timestamp?)`
 
@@ -312,9 +374,21 @@ Parameters for WebSocket subscriptions:
 | `includeEntities`      | `bool`         | Include tagged companies (default: `False`)        |
 | `excludeEmptyContent`  | `bool`         | Only articles with content (default: `False`)      |
 
+### `GetRawArticlesWebSocketParams` (Raw WebSocket)
+
+Parameters for Raw WebSocket subscriptions:
+
+| Field                  | Type           | Description                                        |
+| ---------------------- | -------------- | -------------------------------------------------- |
+| `query`                | `str`          | Search text with field filters (`source:`, `title:`, `summary:`) |
+| `sources`              | `List[str]`    | Include specific sources                           |
+| `excludeSources`       | `List[str]`    | Exclude specific sources                           |
+| `optInSources`         | `List[str]`    | Include non-default sources                        |
+| `language`             | `str`          | Language filter                                    |
+
 ### `Article`
 
-Article object fields:
+Article object fields (Enhanced WebSocket / REST API):
 
 | Field          | Type              | Description                                 |
 | -------------- | ----------------- | ------------------------------------------- |
@@ -329,6 +403,20 @@ Article object fields:
 | `confidence`   | `float`           | Sentiment confidence score                  |
 | `images`       | `List[str]`       | List of image URLs                          |
 | `companies`    | `List[Company]`   | Tagged companies with metadata              |
+
+### `RawArticle`
+
+Raw article object fields (Raw WebSocket):
+
+| Field          | Type              | Description                                 |
+| -------------- | ----------------- | ------------------------------------------- |
+| `title`        | `str`             | Article title                               |
+| `link`         | `str`             | Article URL                                 |
+| `publishDate`  | `datetime`        | Publication date                            |
+| `source`       | `str`             | Source domain                               |
+| `language`     | `str`             | Article language code                       |
+| `summary`      | `str`             | Article summary                             |
+| `images`       | `List[str]`       | List of image URLs                          |
 
 ### `Company`
 

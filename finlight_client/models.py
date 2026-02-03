@@ -108,6 +108,22 @@ class GetArticlesWebSocketParams(BaseModel):
     )
 
 
+class GetRawArticlesWebSocketParams(BaseModel):
+    query: Optional[str] = Field(None, description="Search query string")
+    sources: Optional[List[str]] = Field(
+        None, description="Optional list of article sources"
+    )
+    excludeSources: Optional[List[str]] = Field(
+        None, description="Optional list of article sources to exclude"
+    )
+    optInSources: Optional[List[str]] = Field(
+        None, description="Optional list of non default article sources to include"
+    )
+    language: Optional[str] = Field(
+        None, description="Language filter, e.g., 'en', 'de'"
+    )
+
+
 class Listing(BaseModel):
     ticker: str
     exchangeCode: str
@@ -144,6 +160,16 @@ class Article(BaseModel):
     companies: Optional[List[Company]] = None
 
 
+class RawArticle(BaseModel):
+    link: str
+    title: str
+    publishDate: datetime
+    source: str
+    language: str
+    summary: Optional[str] = None
+    images: Optional[List[str]] = None
+
+
 class ArticleResponse(BaseModel):
     status: str
     page: int
@@ -155,3 +181,25 @@ class Source(BaseModel):
     domain: str
     isContentAvailable: bool
     isDefaultSource: bool
+
+
+@dataclass
+class WebSocketOptions:
+    ping_interval: int = 25
+    pong_timeout: int = 60
+    base_reconnect_delay: float = 0.5
+    max_reconnect_delay: float = 10.0
+    connection_lifetime: int = 115 * 60
+    takeover: bool = False
+    on_close: Optional[object] = None
+
+
+@dataclass
+class RawWebSocketOptions:
+    ping_interval: int = 25
+    pong_timeout: int = 60
+    base_reconnect_delay: float = 0.5
+    max_reconnect_delay: float = 10.0
+    connection_lifetime: int = 115 * 60
+    takeover: bool = False
+    on_close: Optional[object] = None
