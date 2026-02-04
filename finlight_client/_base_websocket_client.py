@@ -14,7 +14,7 @@ from typing import Callable, Optional, Type
 from time import time
 from pydantic import BaseModel
 
-from .models import ApiConfig
+from .models import ApiConfig, BaseArticle
 
 try:
     __version__ = importlib.metadata.version("finlight-client")
@@ -38,7 +38,9 @@ class BaseWebSocketClient:
 
     _logger_name: str
     _log_prefix: str
-    _article_model: Type[BaseModel]
+    _article_model: Type[BaseArticle]
+    _dedupe_articles: bool = False
+    _RECENT_ARTICLE_CACHE_SIZE: int = 10
 
     def __init__(
         self,
@@ -65,6 +67,7 @@ class BaseWebSocketClient:
         self.connection_start_time = None
         self.reconnect_at = None
         self.client_nonce = None
+        self._recent_article_links: set[str] = set()
 
         self._logger = logging.getLogger(self._logger_name)
 
@@ -299,6 +302,16 @@ class BaseWebSocketClient:
             elif msg_action == "sendArticle":
                 data = msg.get("data", {})
                 article = self._article_model.model_validate(data)
+
+                if self._dedupe_articles:
+                    if article.link in self._recent_article_links:
+                        self._logger.debug(f"⏭️ {p}Skipping duplicate article: {article.link}")
+                        return
+
+                    self._recent_article_links.add(article.link)
+                    if len(self._recent_article_links) > self._RECENT_ARTICLE_CACHE_SIZE:
+                        self._recent_article_links.pop()
+
                 on_article(article)
 
             elif msg_action == "admin_kick":

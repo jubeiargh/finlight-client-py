@@ -91,14 +91,14 @@ class GetArticlesWebSocketParams(BaseModel):
     language: Optional[str] = Field(
         default=None, description="Language filter, e.g., 'en', 'de'"
     )
-    extended: bool = Field(default=False, description="Whether to return full article details")
+    extended: Optional[bool] = Field(default=False, description="Whether to return full article details")
     tickers: Optional[List[str]] = Field(
         default=None, description="List of tickers to search for"
     )
-    includeEntities: bool = Field(
+    includeEntities: Optional[bool] = Field(
         default=False, description="Include tagged companies in the result"
     )
-    excludeEmptyContent: bool = Field(
+    excludeEmptyContent: Optional[bool] = Field(
         default=False, description="Only return results that have content"
     )
     countries: Optional[List[str]] = Field(
@@ -144,30 +144,26 @@ class Company(BaseModel):
     otherListings: Optional[List[Listing]] = None
 
 
-class Article(BaseModel):
+class BaseArticle(BaseModel):
     link: str
     title: str
     publishDate: datetime
     source: str
     language: str
+    summary: Optional[str] = None
+    images: Optional[List[str]] = None
+    createdAt: Optional[datetime] = None
+
+
+class Article(BaseArticle):
     sentiment: Optional[str] = None
     confidence: Optional[float] = None
-    summary: Optional[str] = None
-    images: Optional[List[str]] = None
     content: Optional[str] = None
     companies: Optional[List[Company]] = None
-    createdAt: Optional[datetime] = None
 
 
-class RawArticle(BaseModel):
-    link: str
-    title: str
-    publishDate: datetime
-    source: str
-    language: str
-    summary: Optional[str] = None
-    images: Optional[List[str]] = None
-    createdAt: Optional[datetime] = None
+class RawArticle(BaseArticle):
+    pass
 
 
 class ArticleResponse(BaseModel):
