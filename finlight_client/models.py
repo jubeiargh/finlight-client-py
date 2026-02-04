@@ -31,18 +31,23 @@ class GetArticlesParams(BaseModel):
     )
 
     optInSources: Optional[List[str]] = Field(
-        default=None, description="Optional list of non default article sources to include"
+        default=None,
+        description="Optional list of non default article sources to include",
     )
 
     from_: Optional[str] = Field(
-        default=None, alias="from", description="Start date in (YYYY-MM-DD) or ISO Date string"
+        default=None,
+        alias="from",
+        description="Start date in (YYYY-MM-DD) or ISO Date string",
     )
 
     to: Optional[str] = Field(
         default=None, description="End date in (YYYY-MM-DD) or ISO Date string"
     )
 
-    language: Optional[str] = Field(default=None, description='Language, default is "en"')
+    language: Optional[str] = Field(
+        default=None, description='Language, default is "en"'
+    )
 
     tickers: Optional[List[str]] = Field(
         default=None, description="List of tickers to search for"
@@ -62,7 +67,9 @@ class GetArticlesParams(BaseModel):
         default=None, description="Order by"
     )
 
-    order: Optional[Literal["ASC", "DESC"]] = Field(default=None, description="Sort order")
+    order: Optional[Literal["ASC", "DESC"]] = Field(
+        default=None, description="Sort order"
+    )
 
     pageSize: Optional[int] = Field(
         default=None, ge=1, le=1000, description="Results per page (1-1000)"
@@ -71,7 +78,8 @@ class GetArticlesParams(BaseModel):
     page: Optional[int] = Field(default=None, ge=1, description="Page number")
 
     countries: Optional[List[str]] = Field(
-        default=None, description="List of ISO 3166-1 alpha-2 country codes to filter articles"
+        default=None,
+        description="List of ISO 3166-1 alpha-2 country codes to filter articles",
     )
 
     model_config = ConfigDict(populate_by_name=True)
@@ -86,12 +94,15 @@ class GetArticlesWebSocketParams(BaseModel):
         default=None, description="Optional list of article sources to exclude"
     )
     optInSources: Optional[List[str]] = Field(
-        default=None, description="Optional list of non default article sources to include"
+        default=None,
+        description="Optional list of non default article sources to include",
     )
     language: Optional[str] = Field(
         default=None, description="Language filter, e.g., 'en', 'de'"
     )
-    extended: Optional[bool] = Field(default=False, description="Whether to return full article details")
+    extended: Optional[bool] = Field(
+        default=False, description="Whether to return full article details"
+    )
     tickers: Optional[List[str]] = Field(
         default=None, description="List of tickers to search for"
     )
@@ -102,7 +113,8 @@ class GetArticlesWebSocketParams(BaseModel):
         default=False, description="Only return results that have content"
     )
     countries: Optional[List[str]] = Field(
-        default=None, description="List of ISO 3166-1 alpha-2 country codes to filter articles"
+        default=None,
+        description="List of ISO 3166-1 alpha-2 country codes to filter articles",
     )
 
 
@@ -113,9 +125,6 @@ class GetRawArticlesWebSocketParams(BaseModel):
     )
     excludeSources: Optional[List[str]] = Field(
         default=None, description="Optional list of article sources to exclude"
-    )
-    optInSources: Optional[List[str]] = Field(
-        default=None, description="Optional list of non default article sources to include"
     )
     language: Optional[str] = Field(
         default=None, description="Language filter, e.g., 'en', 'de'"
