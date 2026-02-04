@@ -140,7 +140,7 @@ class WebhookService:
     @staticmethod
     def _compute_signature(payload: str, secret: str) -> str:
         """Compute HMAC SHA256 signature."""
-        return hmac.new(
+        return hmac.HMAC(
             secret.encode('utf-8'),
             payload.encode('utf-8'),
             hashlib.sha256

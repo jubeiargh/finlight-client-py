@@ -1,3 +1,4 @@
+from typing import Optional
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -22,7 +23,11 @@ class ApiClient:
         self.session.headers.update({"X-API-KEY": self.config.api_key})
 
     def request(
-        self, method: str, endpoint: str, params: dict = None, data: dict = None
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[dict] = None,
+        data: Optional[dict] = None,
     ):
         url = f"{self.config.base_url}{endpoint}"
         response = self.session.request(
