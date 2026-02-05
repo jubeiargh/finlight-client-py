@@ -1,5 +1,5 @@
 from .api_client import ApiClient
-from .models import ArticleResponse, GetArticlesParams
+from .models import Article, ArticleResponse, GetArticleByLinkParams, GetArticlesParams
 
 
 class ArticleService:
@@ -50,3 +50,33 @@ class ArticleService:
         )
         # Use Pydantic validation to handle all type conversions automatically
         return ArticleResponse.model_validate(response)
+
+    def fetch_article_by_link(self, params: GetArticleByLinkParams) -> Article:
+        """Fetches a single article by its URL.
+
+        Args:
+            params: Parameters for fetching article by link. Supports:
+                - link: The URL of the article to fetch (required)
+                - includeContent: Whether to include full article content
+                - includeEntities: Whether to include tagged company data
+
+        Returns:
+            Article: The article if found
+
+        Raises:
+            Exception: If the API request fails or article is not found
+
+        Example:
+            >>> params = GetArticleByLinkParams(
+            ...     link='https://www.reuters.com/technology/example-article',
+            ...     includeContent=True
+            ... )
+            >>> article = article_service.fetch_article_by_link(params)
+            >>> print(article.title)
+        """
+        response = self.api_client.request(
+            "GET",
+            "/v2/articles/by-link",
+            params=params.model_dump(by_alias=True, exclude_none=True),
+        )
+        return Article.model_validate(response)
