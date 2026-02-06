@@ -74,9 +74,15 @@ class ArticleService:
             >>> article = article_service.fetch_article_by_link(params)
             >>> print(article.title)
         """
+        query_params = params.model_dump(by_alias=True, exclude_none=True)
+        # Convert boolean values to lowercase strings for query params
+        query_params = {
+            k: str(v).lower() if isinstance(v, bool) else v
+            for k, v in query_params.items()
+        }
         response = self.api_client.request(
             "GET",
             "/v2/articles/by-link",
-            params=params.model_dump(by_alias=True, exclude_none=True),
+            params=query_params,
         )
-        return Article.model_validate(response)
+        return Article.model_validate(response['article'])
