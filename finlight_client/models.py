@@ -188,6 +188,18 @@ class Source(BaseModel):
     isDefaultSource: bool
 
 
+class GetArticleByLinkParams(BaseModel):
+    """Parameters for fetching a single article by its URL."""
+
+    link: str = Field(description="The URL of the article to fetch")
+    includeContent: Optional[bool] = Field(
+        default=None, description="Whether to include full article content"
+    )
+    includeEntities: Optional[bool] = Field(
+        default=None, description="Whether to include tagged company data"
+    )
+
+
 @dataclass
 class WebSocketOptions:
     ping_interval: int = 25

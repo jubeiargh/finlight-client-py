@@ -63,6 +63,29 @@ if __name__ == "__main__":
     main()
 ```
 
+### Fetch Article by Link
+
+```python
+from finlight_client import FinlightApi, ApiConfig
+from finlight_client.models import GetArticleByLinkParams
+
+def main():
+    config = ApiConfig(api_key="your_api_key")
+    client = FinlightApi(config)
+
+    params = GetArticleByLinkParams(
+        link="https://www.reuters.com/technology/example-article",
+        includeContent=True,
+        includeEntities=True
+    )
+
+    article = client.articles.fetch_article_by_link(params=params)
+    print(f"{article.publishDate} | {article.title}")
+
+if __name__ == "__main__":
+    main()
+```
+
 ---
 
 ### Stream Real-Time Articles via WebSocket
@@ -193,6 +216,14 @@ Fetch articles with flexible filtering:
 - Automatically parses ISO date strings into `datetime`
 - Pagination with configurable page size (1-1000)
 - Optional full content and entity tagging
+
+### `ArticleService.fetch_article_by_link(params: GetArticleByLinkParams) -> Article`
+
+Fetch a single article by its URL:
+
+- Returns the article if found in the database
+- Optional full content and entity tagging
+- Useful for retrieving specific articles by URL
 
 ### `SourcesService.get_sources() -> List[Source]`
 
@@ -356,6 +387,16 @@ Query parameters to filter articles:
 | `order`                | `str`          | Sort order: `"ASC"` or `"DESC"`                    |
 | `page`                 | `int`          | Page number (starts at 1)                          |
 | `pageSize`             | `int`          | Results per page (1-1000)                          |
+
+### `GetArticleByLinkParams` (REST API)
+
+Parameters for fetching a single article by URL:
+
+| Field                  | Type           | Description                                        |
+| ---------------------- | -------------- | -------------------------------------------------- |
+| `link`                 | `str`          | The URL of the article to fetch (required)         |
+| `includeContent`       | `bool`         | Include full article content (default: `None`)     |
+| `includeEntities`      | `bool`         | Include tagged companies (default: `None`)         |
 
 ### `GetArticlesWebSocketParams` (WebSocket)
 
