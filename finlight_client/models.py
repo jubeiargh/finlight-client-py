@@ -3,6 +3,22 @@ from typing import Callable, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from dataclasses import dataclass
 
+Category = Literal[
+    "markets",
+    "economy",
+    "business",
+    "politics",
+    "geopolitics",
+    "regulation",
+    "technology",
+    "energy",
+    "commodities",
+    "crypto",
+    "health",
+    "climate",
+    "security",
+]
+
 
 @dataclass
 class ApiConfig:
@@ -82,6 +98,11 @@ class GetArticlesParams(BaseModel):
         description="List of ISO 3166-1 alpha-2 country codes to filter articles",
     )
 
+    categories: Optional[List[Category]] = Field(
+        default=None,
+        description="List of categories to filter articles",
+    )
+
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -115,6 +136,10 @@ class GetArticlesWebSocketParams(BaseModel):
     countries: Optional[List[str]] = Field(
         default=None,
         description="List of ISO 3166-1 alpha-2 country codes to filter articles",
+    )
+    categories: Optional[List[Category]] = Field(
+        default=None,
+        description="List of categories to filter articles",
     )
 
 
@@ -169,6 +194,8 @@ class Article(BaseArticle):
     confidence: Optional[float] = None
     content: Optional[str] = None
     companies: Optional[List[Company]] = None
+    countries: Optional[List[str]] = None
+    categories: Optional[List[str]] = None
 
 
 class RawArticle(BaseArticle):
