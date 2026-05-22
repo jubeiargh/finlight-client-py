@@ -1,18 +1,19 @@
 import asyncio
 import contextlib
-import json
-import uuid
-import logging
 import importlib.metadata
+import json
+import logging
+import uuid
+from time import time
+from typing import Callable, Optional, Type
+
+from pydantic import BaseModel
 from websockets.asyncio.client import connect
 from websockets.exceptions import (
-    ConnectionClosedOK,
     ConnectionClosedError,
+    ConnectionClosedOK,
     InvalidStatus,
 )
-from typing import Callable, Optional, Type
-from time import time
-from pydantic import BaseModel
 
 from .models import ApiConfig, BaseArticle
 
@@ -226,7 +227,7 @@ class BaseWebSocketClient:
 
             connection_age = time() - (self.connection_start_time or time())
             self._logger.info(
-                f"🔄 {p}Proactive rotation after {connection_age/60:.1f} minutes (before 2h AWS limit)"
+                f"🔄 {p}Proactive rotation after {connection_age / 60:.1f} minutes (before 2h AWS limit)"
             )
             await ws.close(code=4000, reason="Proactive rotation")
 
@@ -305,11 +306,16 @@ class BaseWebSocketClient:
 
                 if self._dedupe_articles:
                     if article.link in self._recent_article_links:
-                        self._logger.debug(f"⏭️ {p}Skipping duplicate article: {article.link}")
+                        self._logger.debug(
+                            f"⏭️ {p}Skipping duplicate article: {article.link}"
+                        )
                         return
 
                     self._recent_article_links.add(article.link)
-                    if len(self._recent_article_links) > self._RECENT_ARTICLE_CACHE_SIZE:
+                    if (
+                        len(self._recent_article_links)
+                        > self._RECENT_ARTICLE_CACHE_SIZE
+                    ):
                         self._recent_article_links.pop()
 
                 on_article(article)

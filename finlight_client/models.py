@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, List, Literal, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
-from dataclasses import dataclass
 
 Category = Literal[
     "markets",
@@ -79,7 +80,7 @@ class GetArticlesParams(BaseModel):
         default=False, description="Whether to return full article details"
     )
 
-    orderBy: Optional[Literal["publishDate", "createdAt"]] = Field(
+    orderBy: Optional[Literal["publishDate", "createdAt", "updatedAt"]] = Field(
         default=None, description="Order by"
     )
 
@@ -141,6 +142,9 @@ class GetArticlesWebSocketParams(BaseModel):
         default=None,
         description="List of categories to filter articles",
     )
+    includeUpdates: bool = Field(
+        default=False, description="Whether to return updates for article"
+    )
 
 
 class GetRawArticlesWebSocketParams(BaseModel):
@@ -153,6 +157,9 @@ class GetRawArticlesWebSocketParams(BaseModel):
     )
     language: Optional[str] = Field(
         default=None, description="Language filter, e.g., 'en', 'de'"
+    )
+    includeUpdates: bool = Field(
+        default=False, description="Whether to return updates for article"
     )
 
 
@@ -187,6 +194,8 @@ class BaseArticle(BaseModel):
     summary: Optional[str] = None
     images: Optional[List[str]] = None
     createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
+    isUpdate: Optional[bool] = None
 
 
 class Article(BaseArticle):

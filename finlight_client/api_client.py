@@ -1,7 +1,9 @@
 from typing import Optional
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
 from .models import ApiConfig
 
 

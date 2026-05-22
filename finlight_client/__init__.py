@@ -1,11 +1,12 @@
+from typing import Callable, Optional
+
 from .api_client import ApiClient
 from .articles import ArticleService
-from .sources import SourcesService
-from .websocket_client import WebSocketClient
+from .models import ApiConfig, RawWebSocketOptions, WebSocketOptions
 from .raw_websocket_client import RawWebSocketClient
+from .sources import SourcesService
 from .webhook_service import WebhookService, WebhookVerificationError
-from .models import ApiConfig, WebSocketOptions, RawWebSocketOptions
-from typing import Optional, Callable
+from .websocket_client import WebSocketClient
 
 
 class FinlightApi:
@@ -32,11 +33,21 @@ class FinlightApi:
         ws_opts = websocket_options or WebSocketOptions()
         self.websocket = WebSocketClient(
             config=self.config,
-            ping_interval=ws_opts.ping_interval if websocket_options else websocket_ping_interval,
-            pong_timeout=ws_opts.pong_timeout if websocket_options else websocket_pong_timeout,
-            base_reconnect_delay=ws_opts.base_reconnect_delay if websocket_options else websocket_base_reconnect_delay,
-            max_reconnect_delay=ws_opts.max_reconnect_delay if websocket_options else websocket_max_reconnect_delay,
-            connection_lifetime=ws_opts.connection_lifetime if websocket_options else websocket_connection_lifetime,
+            ping_interval=ws_opts.ping_interval
+            if websocket_options
+            else websocket_ping_interval,
+            pong_timeout=ws_opts.pong_timeout
+            if websocket_options
+            else websocket_pong_timeout,
+            base_reconnect_delay=ws_opts.base_reconnect_delay
+            if websocket_options
+            else websocket_base_reconnect_delay,
+            max_reconnect_delay=ws_opts.max_reconnect_delay
+            if websocket_options
+            else websocket_max_reconnect_delay,
+            connection_lifetime=ws_opts.connection_lifetime
+            if websocket_options
+            else websocket_connection_lifetime,
             takeover=ws_opts.takeover if websocket_options else websocket_takeover,
             on_close=ws_opts.on_close if websocket_options else websocket_on_close,
         )

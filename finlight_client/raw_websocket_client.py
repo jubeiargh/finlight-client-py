@@ -1,7 +1,7 @@
 from typing import Callable
 
 from ._base_websocket_client import BaseWebSocketClient
-from .models import RawArticle, GetRawArticlesWebSocketParams
+from .models import GetRawArticlesWebSocketParams, RawArticle
 
 
 class RawWebSocketClient(BaseWebSocketClient):
