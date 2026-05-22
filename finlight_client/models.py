@@ -196,6 +196,7 @@ class BaseArticle(BaseModel):
     createdAt: Optional[datetime] = None
     updatedAt: Optional[datetime] = None
     isUpdate: Optional[bool] = None
+    categories: Optional[List[str]] = None
 
 
 class Article(BaseArticle):
@@ -204,7 +205,6 @@ class Article(BaseArticle):
     content: Optional[str] = None
     companies: Optional[List[Company]] = None
     countries: Optional[List[str]] = None
-    categories: Optional[List[str]] = None
 
 
 class RawArticle(BaseArticle):
