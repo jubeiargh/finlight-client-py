@@ -383,7 +383,7 @@ Query parameters to filter articles:
 | `includeContent`       | `bool`         | Include full article content (default: `False`)    |
 | `includeEntities`      | `bool`         | Include tagged companies (default: `False`)        |
 | `excludeEmptyContent`  | `bool`         | Only articles with content (default: `False`)      |
-| `orderBy`              | `str`          | Order by `"publishDate"` or `"createdAt"`          |
+| `orderBy`              | `str`          | Order by `"publishDate"`, `"createdAt"`, or `"revisedDate"` |
 | `order`                | `str`          | Sort order: `"ASC"` or `"DESC"`                    |
 | `page`                 | `int`          | Page number (starts at 1)                          |
 | `pageSize`             | `int`          | Results per page (1-1000)                          |

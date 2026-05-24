@@ -80,7 +80,7 @@ class GetArticlesParams(BaseModel):
         default=False, description="Whether to return full article details"
     )
 
-    orderBy: Optional[Literal["publishDate", "createdAt", "updatedAt"]] = Field(
+    orderBy: Optional[Literal["publishDate", "createdAt", "revisedDate"]] = Field(
         default=None, description="Order by"
     )
 
@@ -194,7 +194,7 @@ class BaseArticle(BaseModel):
     summary: Optional[str] = None
     images: Optional[List[str]] = None
     createdAt: Optional[datetime] = None
-    updatedAt: Optional[datetime] = None
+    revisedDate: Optional[datetime] = None
     isUpdate: Optional[bool] = None
     categories: Optional[List[str]] = None
 
