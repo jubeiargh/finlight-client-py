@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="finlight-client",
-    version="2.3.0",
+    version="2.4.0",
     description="Python client for the Finlight API",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
