@@ -89,7 +89,7 @@ class GetArticlesParams(BaseModel):
     )
 
     pageSize: Optional[int] = Field(
-        default=None, ge=1, le=1000, description="Results per page (1-1000)"
+        default=None, ge=1, le=100, description="Results per page (1-100)"
     )
 
     page: Optional[int] = Field(default=None, ge=1, description="Page number")
@@ -220,8 +220,11 @@ class ArticleResponse(BaseModel):
 
 class Source(BaseModel):
     domain: str
-    isContentAvailable: bool
     isDefaultSource: bool
+    isContentAvailable: Optional[bool] = None
+    originCountry: Optional[str] = None
+    languages: Optional[List[str]] = None
+    isCustomSource: Optional[bool] = None
 
 
 class GetArticleByLinkParams(BaseModel):
