@@ -1,5 +1,7 @@
 # Finlight Client – Python Library
 
+*English | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)*
+
 A Python client library for interacting with the [Finlight News API](https://finlight.me).
 Finlight delivers real-time and historical financial news articles, enriched with sentiment analysis, company tagging, and market metadata. This library makes it easy to integrate Finlight into your Python applications.
 
