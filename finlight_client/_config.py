@@ -48,7 +48,7 @@ class FinlightConfig:
         5xx answers, network errors and attempt timeouts with growing, jittered
         waits. ``retry_on_burst`` is ``"once"`` (default: wait ``Retry-After``
         seconds, or ``burst_wait`` (10) without the header, then try once more)
-        or ``"off"``. The default ``"once"`` is not final yet.
+        or ``"off"``.
         ``max_pages`` caps ``articles.search_all`` (default 10).
 
     WebSocket:

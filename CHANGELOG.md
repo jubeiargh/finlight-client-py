@@ -29,7 +29,7 @@ Contract kit: 3.0.0-rc.2.
   `PreemptedError`. Every error has a `kind` string.
 - Retries: up to 3 for 5xx, network errors and timeouts; never for 400, 401, 403, 404 and monthly 429.
   A burst 429 waits `Retry-After` (10 s without it) and retries once.
-  **Pending decision:** the default of `retry_on_burst` (`"once"`) is not final and may change before GA.
+  This is on by default (`retry_on_burst="once"`); set `retry_on_burst="off"` to turn it off.
 - Vocabulary constants (`EventType`, `Role`, `Include`, ...) as plain strings; unknown values are kept.
 - `py.typed`, `User-Agent: finlight-client-python/3.0.0` and `x-client-version` on every request.
 - Conformance suite: the shared API v3 contract kit runs in pytest (`CONFORMANCE.md`).
