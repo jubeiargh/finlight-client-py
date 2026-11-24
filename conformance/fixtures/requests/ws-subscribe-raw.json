@@ -6,7 +6,14 @@
     "args": {
       "query": "source:news.example.com",
       "language": "en",
-      "includeUpdates": true
+      "includeUpdates": true,
+      "sourceTypes": [
+        "newswire",
+        "financial_media"
+      ],
+      "excludeSourceTypes": [
+        "blog"
+      ]
     }
   },
   "frame": {
@@ -14,11 +21,19 @@
     "query": "source:news.example.com",
     "language": "en",
     "includeUpdates": true,
-    "clientNonce": "c-kit-raw"
+    "clientNonce": "c-kit-raw",
+    "sourceTypes": [
+      "newswire",
+      "financial_media"
+    ],
+    "excludeSourceTypes": [
+      "blog"
+    ]
   },
   "rules": [
     "no include key at all on raw (an include value is a terminal VALIDATION_FAILED)",
-    "payloadVersion is the JSON integer 3"
+    "payloadVersion is the JSON integer 3",
+    "sourceTypes and excludeSourceTypes work on raw too (the raw document carries the source type)"
   ],
   "server": {
     "frames": [

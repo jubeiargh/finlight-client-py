@@ -144,7 +144,8 @@ class SourceType:
     """``source.type`` of an article and ``type`` of a ``/v3/sources`` entry.
 
     The field is ``None`` when the source is not classified. Also the values for
-    the ``source_types`` and ``exclude_source_types`` search arguments.
+    the ``source_types`` and ``exclude_source_types`` arguments of search and of
+    both streams.
     """
 
     NEWSWIRE = "newswire"

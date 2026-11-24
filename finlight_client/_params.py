@@ -53,6 +53,8 @@ STREAM_FIELDS: tuple[tuple[str, str, str], ...] = (
     ("sources", "sources", "strlist"),
     ("exclude_sources", "excludeSources", "strlist"),
     ("opt_in_sources", "optInSources", "strlist"),
+    ("source_types", "sourceTypes", "strlist"),
+    ("exclude_source_types", "excludeSourceTypes", "strlist"),
     ("language", "language", "str"),
     ("tickers", "tickers", "strlist"),
     ("countries", "countries", "strlist"),
@@ -65,6 +67,8 @@ RAW_STREAM_FIELDS: tuple[tuple[str, str, str], ...] = (
     ("query", "query", "str"),
     ("sources", "sources", "strlist"),
     ("exclude_sources", "excludeSources", "strlist"),
+    ("source_types", "sourceTypes", "strlist"),
+    ("exclude_source_types", "excludeSourceTypes", "strlist"),
     ("language", "language", "str"),
     ("include_updates", "includeUpdates", "bool"),
 )

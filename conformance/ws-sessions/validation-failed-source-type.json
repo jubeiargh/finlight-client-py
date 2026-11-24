@@ -1,0 +1,90 @@
+{
+  "id": "S-29",
+  "title": "VALIDATION_FAILED for an unknown sourceTypes value",
+  "endpoint": "enriched",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1",
+        "sourceTypes": [
+          "wire"
+        ]
+      },
+      "note": "only reachable if an SDK let an unknown value through"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.error",
+        "payloadVersion": 3,
+        "data": {
+          "code": "VALIDATION_FAILED",
+          "message": "Invalid subscription message",
+          "details": [
+            {
+              "field": "sourceTypes",
+              "constraints": {
+                "isIn": "each value in sourceTypes must be one of the following values: newswire, press_release, financial_media, general_media, aggregator, blog, government"
+              },
+              "allowedValues": [
+                "newswire",
+                "press_release",
+                "financial_media",
+                "general_media",
+                "aggregator",
+                "blog",
+                "government"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "serverCloses",
+      "note": "the server drops the connection (API Gateway DeleteConnection)"
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "FinlightApiError",
+      "apiKind": "validation_failed",
+      "code": "VALIDATION_FAILED"
+    },
+    {
+      "step": "expect",
+      "outcome": "noReconnect"
+    }
+  ]
+}

@@ -79,7 +79,7 @@ if results.truncated:
 
 `source_types` 和 `exclude_source_types` 按来源类型筛选（`SourceType.ALL`，例如 `SourceType.NEWSWIRE`）。
 未分类来源的文章不会匹配 `source_types`，在 `exclude_source_types` 下会保留。两者只会缩小你已能获取的来源范围。
-仅用于搜索，不用于流。
+`stream()` 和 `raw_stream()` 同样支持这两个参数。
 
 ## 查询文章、公司和来源
 
@@ -149,7 +149,8 @@ asyncio.run(main())
 ```
 
 - `event.kind` 为 `created`、`updated` 或 `other`（本 SDK 尚不认识的事件）。
-- `client.raw_stream(query=..., sources=..., exclude_sources=..., language=..., include_updates=...)`
+- `client.raw_stream(query=..., sources=..., exclude_sources=..., source_types=..., exclude_source_types=...,
+  language=..., include_updates=...)`
   推送尚未增强处理的文章：没有 `include`，也没有 content、sentiment、companies 或 events。
 - Hook 可以是普通函数或 `async def`：`on_admitted(AdmittedInfo)`；除第一次外每次新连接后的
   `on_reconnect(ReconnectInfo)`；不会结束流的问题交给 `on_error(FinlightError)`；以及

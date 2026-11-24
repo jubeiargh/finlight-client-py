@@ -114,3 +114,4 @@ Client steps of a WebSocket session that the SDK can never produce (a truncated 
 | S-26 | Dial refused: server error | `tests/conformance/test_ws_sessions.py::test_session[S-26]` |
 | S-27 | connection.preempted, reason quota_exceeded, with quotaReconnect turned off | `tests/conformance/test_ws_sessions.py::test_session[S-27]` |
 | S-28 | Dial refused: WebSocket quota exhausted, with quotaReconnect turned off | `tests/conformance/test_ws_sessions.py::test_session[S-28]` |
+| S-29 | VALIDATION_FAILED for an unknown sourceTypes value | `tests/conformance/test_ws_sessions.py::test_session[S-29]` |

@@ -20,7 +20,14 @@
         "query": "source:news.example.com",
         "language": "en",
         "includeUpdates": true,
-        "clientNonce": "c-kit-raw"
+        "clientNonce": "c-kit-raw",
+        "sourceTypes": [
+          "newswire",
+          "financial_media"
+        ],
+        "excludeSourceTypes": [
+          "blog"
+        ]
       }
     },
     {

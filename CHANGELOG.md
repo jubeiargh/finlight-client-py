@@ -47,8 +47,10 @@ Contract kit: 3.0.0-rc.4.
   A monthly 429 fails at once on REST, also inside `search_all`.
   A burst 429 waits exactly `Retry-After` (10 s without it) and retries once.
   This is on by default (`retry_on_burst="once"`); set `retry_on_burst="off"` to turn it off.
-- `articles.search` and `articles.search_all` take `source_types` and `exclude_source_types`
-  (`sourceTypes`, `excludeSourceTypes`). Streams do not take them.
+- `articles.search`, `articles.search_all`, `stream` and `raw_stream` take `source_types` and
+  `exclude_source_types` (`sourceTypes`, `excludeSourceTypes`). The streams send them only when set. An
+  unknown value ends a stream with `ValidationFailedError` (field `sourceTypes`, `allowed_values`), without
+  a reconnect. Servers older than this filter drop the keys silently.
 - Vocabulary constants (`EventType`, `CompanyRole`, `IncludeBlock`, `SortOrder`, `SourceType`,
   `RateLimitType`, ...) as plain strings; unknown values are kept. `SourceType` has 7 values: `newswire`,
   `press_release`, `financial_media`, `general_media`, `aggregator`, `blog`, `government`.

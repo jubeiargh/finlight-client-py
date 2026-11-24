@@ -10,7 +10,14 @@
       ],
       "query": "ticker:XMPL",
       "language": "en",
-      "includeUpdates": true
+      "includeUpdates": true,
+      "sourceTypes": [
+        "newswire",
+        "financial_media"
+      ],
+      "excludeSourceTypes": [
+        "blog"
+      ]
     }
   },
   "frame": {
@@ -22,11 +29,19 @@
     "query": "ticker:XMPL",
     "language": "en",
     "includeUpdates": true,
-    "clientNonce": "c-kit-1"
+    "clientNonce": "c-kit-1",
+    "sourceTypes": [
+      "newswire",
+      "financial_media"
+    ],
+    "excludeSourceTypes": [
+      "blog"
+    ]
   },
   "rules": [
     "payloadVersion is the JSON integer 3, set by the SDK, never by the user",
     "include is a JSON array; includeContent, includeEntities and extended are never sent",
+    "sourceTypes and excludeSourceTypes are JSON arrays of vocab.json request.sourceTypes, sent only when the user sets them",
     "clientNonce is optional; the SDK may set one per connection",
     "the frame is sent on the $default route (no \"action\" key)"
   ],

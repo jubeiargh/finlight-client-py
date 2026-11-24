@@ -50,10 +50,10 @@ API_KIND_CLASSES = {
 SESSIONS = fixtures("ws-sessions")
 FORBIDDEN = {"includeContent", "includeEntities", "extended"}
 ENRICHED_KEYS = {
-    "include", "query", "sources", "excludeSources", "optInSources", "language", "tickers",
-    "countries", "categories", "excludeEmptyContent", "includeUpdates",
+    "include", "query", "sources", "excludeSources", "optInSources", "sourceTypes", "excludeSourceTypes",
+    "language", "tickers", "countries", "categories", "excludeEmptyContent", "includeUpdates",
 }
-RAW_KEYS = {"query", "sources", "excludeSources", "language", "includeUpdates"}
+RAW_KEYS = {"query", "sources", "excludeSources", "sourceTypes", "excludeSourceTypes", "language", "includeUpdates"}
 DEFAULT_FRAME = {"payloadVersion": 3, "query": "ticker:XMPL", "clientNonce": "c-kit-1"}
 
 
@@ -285,6 +285,11 @@ class Session:
                 assert err.code == spec["code"]
             if spec["apiKind"] == "validation_failed" and err.code == "VALIDATION_FAILED":
                 assert err.errors and err.errors[0].field and err.errors[0].constraints
+                sent = [s["frame"]["data"]["details"] for s in self.steps if s["step"] == "serverSends"
+                        and s["frame"].get("event") == "connection.error" and s["frame"]["data"].get("details")]
+                if sent:  # field and allowedValues arrive as the server sent them
+                    assert [(i.field, i.allowed_values) for i in err.errors] == [
+                        (d.get("field"), d.get("allowedValues")) for d in sent[-1]]
         elif kind == "PreemptedError":
             assert isinstance(err, PreemptedError)
             assert err.reason == spec["reason"] and err.new_lease_id == spec["newLeaseId"]

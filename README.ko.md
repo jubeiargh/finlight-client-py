@@ -80,7 +80,7 @@ if results.truncated:
 
 `source_types`와 `exclude_source_types`는 소스 유형으로 거릅니다(`SourceType.ALL`, 예: `SourceType.NEWSWIRE`).
 분류되지 않은 소스의 기사는 `source_types`에 일치하지 않고, `exclude_source_types`에서는 남습니다.
-둘 다 이미 받을 수 있는 소스를 좁히기만 합니다. 검색 전용이며 스트림에는 없습니다.
+둘 다 이미 받을 수 있는 소스를 좁히기만 합니다. `stream()`과 `raw_stream()`도 이 둘을 받습니다.
 
 ## 기사, 기업, 소스 조회
 
@@ -151,7 +151,8 @@ asyncio.run(main())
 ```
 
 - `event.kind`는 `created`, `updated` 또는 `other`(이 SDK가 아직 모르는 이벤트)입니다.
-- `client.raw_stream(query=..., sources=..., exclude_sources=..., language=..., include_updates=...)`는
+- `client.raw_stream(query=..., sources=..., exclude_sources=..., source_types=..., exclude_source_types=...,
+  language=..., include_updates=...)`는
   보강 전의 기사를 전달합니다. `include`가 없고 content, sentiment, companies, events도 없습니다.
 - 훅은 일반 함수나 `async def` 모두 가능합니다: `on_admitted(AdmittedInfo)`, 첫 연결을 제외한 새 연결마다
   `on_reconnect(ReconnectInfo)`, 스트림을 끝내지 않는 문제에 `on_error(FinlightError)`, 그리고

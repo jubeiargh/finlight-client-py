@@ -54,6 +54,8 @@ def test_search_shape_errors_are_local(offline: FinlightClient, bad: dict[str, A
         lambda c: c.stream(include=["content", "events", "companies", "x"]),
         lambda c: c.stream(tickers="NVDA"),
         lambda c: c.raw_stream(include_updates="yes"),
+        lambda c: c.stream(source_types="newswire"),
+        lambda c: c.raw_stream(exclude_source_types=[1]),
         lambda c: c.articles.search_all(max_pages=0),
     ],
 )
@@ -68,11 +70,12 @@ def test_unknown_keyword_names_the_key(offline: FinlightClient) -> None:
             call(event_type=["mna"])
 
 
-def test_source_types_are_search_only(offline: FinlightClient) -> None:
+def test_source_types_reach_both_subscribe_frames(offline: FinlightClient) -> None:
     for call in (offline.stream, offline.raw_stream):
-        for name in ("source_types", "exclude_source_types"):
-            with pytest.raises(TypeError, match=name):
-                call(**{name: ["newswire"]})
+        stream = call(source_types=["newswire", "financial_media"], exclude_source_types=["blog"])
+        assert stream._frame == {
+            "payloadVersion": 3, "sourceTypes": ["newswire", "financial_media"], "excludeSourceTypes": ["blog"]}
+        assert call()._frame == {"payloadVersion": 3}  # left out unless set
 
 
 def test_source_types_are_sent(httpserver: Any, make_client: Any) -> None:

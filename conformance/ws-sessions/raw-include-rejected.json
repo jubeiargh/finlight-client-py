@@ -21,6 +21,13 @@
         "language": "en",
         "includeUpdates": true,
         "clientNonce": "c-kit-raw",
+        "sourceTypes": [
+          "newswire",
+          "financial_media"
+        ],
+        "excludeSourceTypes": [
+          "blog"
+        ],
         "include": [
           "content"
         ]

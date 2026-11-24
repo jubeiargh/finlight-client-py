@@ -78,8 +78,8 @@ checked locally, so new server values work without an SDK update.
 
 `source_types` and `exclude_source_types` filter by the type of the source (`SourceType.ALL`, for
 example `SourceType.NEWSWIRE`). Articles from unclassified sources never match `source_types` and are kept
-by `exclude_source_types`. Both only narrow the sources you already get. They exist for search only, not
-for streams.
+by `exclude_source_types`. Both only narrow the sources you already get. `stream()` and `raw_stream()`
+take them too.
 
 ## Look up articles, companies and sources
 
@@ -150,8 +150,8 @@ asyncio.run(main())
 ```
 
 - `event.kind` is `created`, `updated` or `other` (an event this SDK does not know yet).
-- `client.raw_stream(query=..., sources=..., exclude_sources=..., language=..., include_updates=...)`
-  delivers articles before enrichment: no `include`, no content, sentiment, companies or events.
+- `client.raw_stream(query=..., sources=..., exclude_sources=..., source_types=..., exclude_source_types=...,
+  language=..., include_updates=...)` delivers articles before enrichment: no `include`, no content, sentiment, companies or events.
 - Hooks, plain or `async def`: `on_admitted(AdmittedInfo)`, `on_reconnect(ReconnectInfo)` after every
   new connection but the first, `on_error(FinlightError)` for problems that do not end the stream, and
   `on_quota_wait(QuotaWaitInfo)`. Errors raised in a hook are logged and never stop the stream.

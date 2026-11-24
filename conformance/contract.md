@@ -232,12 +232,18 @@ Send the subscribe message as a JSON object without an `action` key. It is v3 on
 
 Enriched: `payloadVersion`, `include` (`content`, `companies`, `events`), `query` (lenient grammar: unknown fields
 fall back to full text; a known field with an unknown value, e.g. `sourceType:wire`, is rejected), `sources`, `excludeSources`, `optInSources`, `language` (one language, default `en`),
-`tickers`, `countries`, `categories`, `excludeEmptyContent`, `includeUpdates` (without it no `article.updated` is
+`tickers`, `countries`, `categories`, `sourceTypes`, `excludeSourceTypes` (same vocabulary and meaning as in 2.2),
+`excludeEmptyContent`, `includeUpdates` (without it no `article.updated` is
 delivered), `clientNonce`. Unknown keys are dropped silently. `includeContent`, `includeEntities` and `extended` are
 forbidden with v3: `connection.error` `VALIDATION_FAILED`, then the connection is closed.
 
-Raw: `payloadVersion`, `query`, `sources`, `excludeSources`, `language`, `includeUpdates`, `clientNonce`. Any
-`include` value is a `VALIDATION_FAILED` and the connection is closed; send no `include` key.
+Raw: `payloadVersion`, `query`, `sources`, `excludeSources`, `sourceTypes`, `excludeSourceTypes`, `language`,
+`includeUpdates`, `clientNonce`. Any `include` value (unknown ones too) is a `VALIDATION_FAILED` with
+`constraints.raw` and no `allowedValues`, and the connection is closed; send no `include` key.
+
+An unknown value of a closed vocabulary (`sourceTypes`, `excludeSourceTypes`, and `include` on the enriched stream),
+or a value that is not an array, is a `VALIDATION_FAILED` and the connection is closed; its `details[]` entry carries
+`allowedValues` (`ws-sessions/validation-failed-source-type.json`).
 
 Order of handling: unreadable JSON → error in v2 form; ping on the wrong route → `PING_ON_DEFAULT_ROUTE`;
 admission (`connection.admitted`); validation (failure closes the connection); enriched only: an initial search
@@ -309,14 +315,16 @@ dispatches on `event` first and falls back to `action`. This is protocol handlin
 |---|---|
 | `eventId` | Idempotency key, opaque. Same on every retry of the same event. Test webhook: starts with `evt_test`. **Dedupe on it.** |
 | `event` | `article.created` or `article.updated` (open list). |
-| `occurredAt` | When the event happened (not the delivery time); stable across retries. Raw: `firstSeenAt`. |
+| `occurredAt` | When the event happened (not the delivery time); stable across retries. Raw: `firstSeenAt` on `article.created`, the time finlight recorded the update (not `revisedAt`) on `article.updated`. Each update gets its own `eventId`. |
 | `payloadVersion` | `3`. |
 | `subscriptionId` | The webhook id (UUID). |
 | `changedFields` | Only on `article.updated`, only fields this subscription can see (`title`, `summary`, and `content` when requested and entitled). Absent otherwise. |
 | `data` | The article object (2.5), cut by the plan at send time. |
 
 An update whose visible changes are empty is not delivered. Without `includeUpdates: true` in the webhook
-criteria no update is delivered. Raw webhooks deliver the skeleton only.
+criteria no update is delivered. Raw webhooks deliver the skeleton only. v3 webhook criteria also take
+`sourceTypes` and `excludeSourceTypes` (same vocabulary and meaning as in 2.2, raw included); webhooks are set up in
+the dashboard, not by the SDK.
 
 The test webhook (sent from the dashboard) carries a fixed sample with exactly the requested blocks and is not cut
 by entitlements.

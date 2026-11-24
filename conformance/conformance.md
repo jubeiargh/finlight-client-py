@@ -181,5 +181,6 @@ code. All article text, companies, tickers, ISINs, keys and secrets in the kit a
 | S-26 | Dial refused: server error | `ws-sessions/dial-server-error.json` | Reconnect with backoff; not terminal. |
 | S-27 | connection.preempted, reason quota_exceeded, with quotaReconnect turned off | `ws-sessions/preempted-quota-exceeded-no-reconnect.json` | Terminal PreemptedError{reason: "quota_exceeded", newLeaseId: null}; no reconnect. |
 | S-28 | Dial refused: WebSocket quota exhausted, with quotaReconnect turned off | `ws-sessions/dial-quota-exceeded-no-reconnect.json` | Terminal FinlightApiError, apiKind forbidden (ForbiddenError), status 403; no reconnect. |
+| S-29 | VALIDATION_FAILED for an unknown sourceTypes value | `ws-sessions/validation-failed-source-type.json` | Terminal FinlightApiError, apiKind validation_failed (field sourceTypes); details[] carry allowedValues for a closed vocabulary, like the REST problem; no reconnect. SDKs that check sourceTypes against vocab.json locally reject it with FinlightValidationError before dialing. |
 
-Total: 105 cases.
+Total: 106 cases.

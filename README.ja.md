@@ -81,7 +81,7 @@ SDK を更新せずに使えます。
 
 `source_types` と `exclude_source_types` はソースの種類で絞り込みます（`SourceType.ALL`、例：
 `SourceType.NEWSWIRE`）。種類が未分類のソースの記事は `source_types` に一致せず、`exclude_source_types` では
-残ります。どちらも受け取れるソースを狭めるだけです。検索専用で、ストリームでは使えません。
+残ります。どちらも受け取れるソースを狭めるだけです。`stream()` と `raw_stream()` でも使えます。
 
 ## 記事・企業・ソースの参照
 
@@ -152,7 +152,8 @@ asyncio.run(main())
 ```
 
 - `event.kind` は `created`、`updated`、`other`（この SDK がまだ知らないイベント）のいずれかです。
-- `client.raw_stream(query=..., sources=..., exclude_sources=..., language=..., include_updates=...)`
+- `client.raw_stream(query=..., sources=..., exclude_sources=..., source_types=..., exclude_source_types=...,
+  language=..., include_updates=...)`
   はエンリッチ前の記事を配信します。`include` はなく、content、sentiment、companies、events もありません。
 - フックは通常の関数でも `async def` でも構いません：`on_admitted(AdmittedInfo)`、最初を除く新しい接続の
   たびの `on_reconnect(ReconnectInfo)`、ストリームを終わらせない問題の `on_error(FinlightError)`、そして
