@@ -208,7 +208,7 @@ class HttpTransport:
 
             if attempt >= cfg.max_retries:
                 raise error
-            delay = min(cfg.retry_backoff_max, cfg.retry_backoff_base * (2**attempt))
+            delay = min(cfg.retry_max_delay, cfg.retry_base_delay * (2**attempt))
             delay = delay * (0.5 + 0.5 * cfg.random())
             attempt += 1
             if deadline is not None and cfg.monotonic() + delay > deadline:

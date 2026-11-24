@@ -44,6 +44,7 @@
   },
   "expect": {
     "code": "CURSOR_MISMATCH",
+    "apiKind": "cursor_mismatch",
     "retry": "never"
   }
 }

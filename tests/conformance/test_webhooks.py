@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from finlight_client import WebhookEvent, Webhooks, WebhookVerificationError, WrongPayloadVersion
+from finlight_client import WebhookEvent, Webhooks, WebhookVerificationError, WrongPayloadVersion, raw_json
 from finlight_client._timeutil import parse_rfc3339
 from tests.support import fixtures, load
 
@@ -51,18 +51,18 @@ def test_webhook(case: str, path: Path) -> None:
                 assert getattr(event.data, flag) is False
         return
 
-    if expect["error"] == "PayloadVersionMismatch":
-        # The rules make this a result (WrongPayloadVersion), not an exception.
-        result = run(raw)
+    if expect["outcome"] == "wrongPayloadVersion":
+        result = run(raw)  # a result, never an error
         assert isinstance(result, WrongPayloadVersion)
-        assert result.version == 2
-        assert result.payload_version == expect["receivedPayloadVersion"]
-        assert result.payload_version_present is False
+        assert result.detected_version == expect["detectedVersion"]
+        assert result.payload_version_present is expect["payloadVersionPresent"]
+        assert result.payload_version is None
         assert result.link == expect["link"]
         assert isinstance(result.raw, dict) and result.raw["link"] == expect["link"]
+        assert raw_json(result) is result.raw
         return
 
-    assert expect["error"] == "WebhookSignatureError"
+    assert expect["outcome"] == "error" and expect["error"] == "WebhookVerificationError"
     with pytest.raises(WebhookVerificationError) as info:
         run(raw)
     assert info.value.reason == expect["reason"]

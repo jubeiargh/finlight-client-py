@@ -1,14 +1,11 @@
 # Conformance case map
 
-Every case of the finlight API v3 contract kit (`conformance/conformance.md`) and the pytest test that runs it.
+Every case of the finlight API v3 contract kit 3.0.0-rc.3 (`conformance/conformance.md`) and the pytest test that runs it.
 `tests/conformance/test_case_map.py` fails when a kit case is missing here or a mapped test does not exist.
 Re-sync the kit with `python scripts/sync_conformance.py --from <kit dir>`.
 
-Note on S-10 and S-24: kit rc.2 expects an exhausted WebSocket quota to be terminal. By the owner
-decision of 2026-11-24 (kit rc.3) the stream reconnects every hour instead, by default. The session
-engine replaces those two expectations with the hourly reconnect (`QUOTA_CASES` in
-`tests/conformance/test_ws_sessions.py`); `test_quota_terminal_when_switched_off` still runs the rc.2
-expectation with `quota_reconnect=False`. Remove the override once rc.3 is vendored.
+Client steps of a WebSocket session that the SDK can never produce (a truncated frame, a legacy key, a ping on
+`$default`, a re-subscribe on the same connection) are not sent; the server side of the session is replayed as is.
 
 | Case | Title | Test |
 |---|---|---|
@@ -115,3 +112,5 @@ expectation with `quota_reconnect=False`. Remove the override once rc.3 is vendo
 | S-24 | Dial refused: WebSocket quota exhausted | `tests/conformance/test_ws_sessions.py::test_session[S-24]` |
 | S-25 | Dial refused: lost the admit race | `tests/conformance/test_ws_sessions.py::test_session[S-25]` |
 | S-26 | Dial refused: server error | `tests/conformance/test_ws_sessions.py::test_session[S-26]` |
+| S-27 | connection.preempted, reason quota_exceeded, with quotaReconnect turned off | `tests/conformance/test_ws_sessions.py::test_session[S-27]` |
+| S-28 | Dial refused: WebSocket quota exhausted, with quotaReconnect turned off | `tests/conformance/test_ws_sessions.py::test_session[S-28]` |

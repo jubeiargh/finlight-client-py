@@ -1,7 +1,9 @@
 """Error types of the finlight client.
 
 Every error raised by the SDK derives from :class:`FinlightError` and carries a
-``kind`` string, so callers can tell errors apart without ``isinstance``.
+``kind`` string (``api``, ``validation``, ``network``, ``timeout``, ``decode``,
+``webhook_verification``, ``preempted``), so callers can tell errors apart
+without ``isinstance``. API errors also carry ``api_kind``.
 Errors of third-party libraries are never raised directly; they are wrapped and
 kept as ``__cause__``.
 """
@@ -34,7 +36,7 @@ __all__ = [
 
 
 class FinlightError(Exception):
-    """Base class of every error the SDK raises."""
+    """Common base of every error the SDK raises. The SDK only raises its seven kinds."""
 
     kind: str = "finlight"
 
@@ -44,21 +46,30 @@ class FinlightError(Exception):
 
 
 class FieldIssue(NamedTuple):
-    """One entry of ``errors[]`` in a problem response."""
+    """One entry of ``errors[]`` in a problem response, or of ``details[]`` in a stream error.
+
+    ``constraints`` (``{rule: text}``) is only set on stream errors.
+    """
 
     field: Optional[str]
     issue: Optional[str]
     allowed_values: Optional[list[str]] = None
+    constraints: Optional[dict[str, str]] = None
 
 
 class FinlightApiError(FinlightError):
     """An error answered by the finlight API (REST status or WebSocket error).
 
-    ``code`` is an open string. Known codes have their own subclass; an unknown
-    code stays on this base class.
+    ``code`` is an open string (``None`` when the answer had no code). Known
+    kinds have their own subclass; ``api_kind`` names the kind as text:
+    ``validation_failed``, ``cursor_invalid``, ``cursor_mismatch``,
+    ``unauthorized``, ``forbidden``, ``not_found``, ``rate_limited``,
+    ``internal_error`` or ``other`` (this base class). ``raw`` is the body as
+    text; :func:`finlight_client.raw_json` parses it.
     """
 
     kind = "api"
+    api_kind = "other"
 
     def __init__(
         self,
@@ -72,7 +83,6 @@ class FinlightApiError(FinlightError):
         request_id: Optional[str] = None,
         errors: Optional[list[FieldIssue]] = None,
         raw: Optional[str] = None,
-        retry_after: Optional[float] = None,
     ) -> None:
         super().__init__(message)
         self.status = status
@@ -83,12 +93,6 @@ class FinlightApiError(FinlightError):
         self.request_id = request_id
         self.errors: list[FieldIssue] = list(errors or [])
         self.raw = raw
-        self.retry_after = retry_after
-
-    @property
-    def docs_url(self) -> Optional[str]:
-        """Link to the error page on docs.finlight.me (the problem ``type``)."""
-        return self.type
 
     def raw_json(self) -> Any:
         """The error body parsed as a JSON tree, or ``None`` if it is not JSON."""
@@ -101,7 +105,7 @@ class FinlightApiError(FinlightError):
 
     def __repr__(self) -> str:
         return (
-            f"{type(self).__name__}(status={self.status!r}, code={self.code!r}, "
+            f"{type(self).__name__}(status={self.status!r}, code={self.code!r}, api_kind={self.api_kind!r}, "
             f"detail={self.detail!r}, request_id={self.request_id!r})"
         )
 
@@ -109,25 +113,37 @@ class FinlightApiError(FinlightError):
 class ValidationFailedError(FinlightApiError):
     """``VALIDATION_FAILED``: the server rejected the request or subscribe."""
 
+    api_kind = "validation_failed"
+
 
 class CursorInvalidError(FinlightApiError):
     """``CURSOR_INVALID``: the cursor could not be decoded."""
+
+    api_kind = "cursor_invalid"
 
 
 class CursorMismatchError(FinlightApiError):
     """``CURSOR_MISMATCH``: sort or filters changed since the cursor was issued."""
 
+    api_kind = "cursor_mismatch"
+
 
 class UnauthorizedError(FinlightApiError):
     """``UNAUTHORIZED``: missing or invalid API key."""
+
+    api_kind = "unauthorized"
 
 
 class ForbiddenError(FinlightApiError):
     """``FORBIDDEN``: the plan lacks the needed entitlement."""
 
+    api_kind = "forbidden"
+
 
 class NotFoundError(FinlightApiError):
     """``NOT_FOUND``: the lookup found nothing."""
+
+    api_kind = "not_found"
 
 
 class RateLimitedError(FinlightApiError):
@@ -138,23 +154,35 @@ class RateLimitedError(FinlightApiError):
     header in seconds (sent on burst only).
     """
 
-    def __init__(self, message: str, *, limit_type: str = "unknown", **kwargs: Any) -> None:
+    api_kind = "rate_limited"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        limit_type: str = "unknown",
+        retry_after: Optional[float] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(message, **kwargs)
         self.limit_type = limit_type
-
-    @property
-    def is_quota_exhausted(self) -> bool:
-        return self.limit_type == "monthly"
+        self.retry_after = retry_after
 
 
 class InternalServerError(FinlightApiError):
     """``INTERNAL_ERROR``: the server could not process the request."""
 
+    api_kind = "internal_error"
+
 
 class FinlightValidationError(FinlightError, ValueError):
-    """A request was rejected locally, before anything was sent."""
+    """A request was rejected locally, before anything was sent. ``param`` is the rejected key, if any."""
 
     kind = "validation"
+
+    def __init__(self, message: str, *, param: Optional[str] = None) -> None:
+        super().__init__(message)
+        self.param = param
 
 
 class FinlightNetworkError(FinlightError):
@@ -170,17 +198,25 @@ class FinlightTimeoutError(FinlightNetworkError, TimeoutError):
 
 
 class FinlightDecodeError(FinlightError):
-    """A response could not be read into the SDK models."""
+    """A response could not be read into the SDK models.
+
+    ``path`` is the JSON path of the value that did not fit (or ``None``), ``raw`` that value.
+    """
 
     kind = "decode"
 
-    def __init__(self, message: str, *, raw: Any = None) -> None:
+    def __init__(self, message: str, *, raw: Any = None, path: Optional[str] = None) -> None:
         super().__init__(message)
         self.raw = raw
+        self.path = path
 
 
 class WebhookVerificationError(FinlightError):
-    """A webhook request failed verification. ``reason`` says why."""
+    """A webhook request failed verification. ``reason`` says why, in snake_case:
+    ``invalid_raw_body``, ``invalid_secret``, ``missing_signature``, ``missing_timestamp``,
+    ``duplicate_header``, ``non_ascii_header``, ``unsupported_signature_scheme``,
+    ``unparseable_timestamp``, ``signature_mismatch``, ``timestamp_outside_tolerance``.
+    """
 
     kind = "webhook_verification"
 
@@ -190,7 +226,11 @@ class WebhookVerificationError(FinlightError):
 
 
 class PreemptedError(FinlightError):
-    """The server ended the stream with ``connection.preempted``. Terminal."""
+    """The server ended the connection with ``connection.preempted``.
+
+    Terminal for reason ``connection_limit``. For ``quota_exceeded`` the stream
+    waits for the quota by default and reports this error to ``on_quota_wait``.
+    """
 
     kind = "preempted"
 
@@ -255,9 +295,12 @@ def _issues_from(value: Any) -> list[FieldIssue]:
         field = item.get("field")
         issue = item.get("issue")
         allowed = item.get("allowedValues")
-        if issue is None and isinstance(item.get("constraints"), dict):
-            texts = [str(v) for v in item["constraints"].values()]
-            issue = "; ".join(texts) if texts else None
+        raw_constraints = item.get("constraints")
+        constraints = (
+            {str(k): str(v) for k, v in raw_constraints.items()} if isinstance(raw_constraints, dict) else None
+        )
+        if issue is None and constraints:
+            issue = "; ".join(constraints.values())
         issues.append(
             FieldIssue(
                 field=field if isinstance(field, str) else None,
@@ -265,6 +308,7 @@ def _issues_from(value: Any) -> list[FieldIssue]:
                 allowed_values=(
                     [v for v in allowed if isinstance(v, str)] if isinstance(allowed, list) else None
                 ),
+                constraints=constraints,
             )
         )
     return issues
@@ -314,7 +358,6 @@ def api_error_from_response(
             request_id=request_id or sent_request_id,
             errors=_issues_from(parsed.get("errors")),
             raw=text,
-            retry_after=retry_after,
         )
         message = f"finlight API error {eff_status}"
         if code:
@@ -323,7 +366,10 @@ def api_error_from_response(
             message += f": {detail}"
         if code == "RATE_LIMITED" or (code is None and eff_status == 429):
             return RateLimitedError(
-                message, limit_type=classify_rate_limit(parsed.get("limitType"), detail), **kwargs
+                message,
+                limit_type=classify_rate_limit(parsed.get("limitType"), detail),
+                retry_after=retry_after,
+                **kwargs,
             )
         cls = _CODE_CLASSES.get(code or "", FinlightApiError)
         return cls(message, **kwargs)
@@ -361,7 +407,6 @@ def api_error_from_response(
             request_id=sent_request_id,
             errors=issues,
             raw=text,
-            retry_after=retry_after,
         )
 
     snippet = text.strip()
@@ -386,5 +431,4 @@ def api_error_from_response(
         detail=text or None,
         request_id=sent_request_id,
         raw=text,
-        retry_after=retry_after,
     )

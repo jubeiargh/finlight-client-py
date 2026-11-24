@@ -17,7 +17,8 @@ without WebSockets), ``VALIDATION_FAILED``, ``connection.preempted`` with reason
 monthly WebSocket quota (dial 403 "quota exceeded" or ``connection.preempted``
 with reason ``quota_exceeded``) is not terminal by default: the stream tries
 again every ``quota_reconnect_interval`` seconds (1 hour) until the quota allows
-it, logging a warning and calling ``on_error`` on every attempt. With
+it, logging a warning and calling ``on_quota_wait`` (not ``on_error``) on every
+wait. With
 ``quota_reconnect=False`` it ends with the error instead. Other problems
 reconnect with backoff and are reported through ``on_error``.
 
@@ -53,9 +54,10 @@ from ._version import __version__
 from .errors import (
     FinlightApiError,
     FinlightDecodeError,
-    FinlightError,
     FinlightNetworkError,
+    FinlightValidationError,
     ForbiddenError,
+    InternalServerError,
     PreemptedError,
     RateLimitedError,
     UnauthorizedError,
@@ -65,7 +67,10 @@ from .errors import (
 from .models import StreamEvent, decode_article
 
 __all__ = [
-    "Stream",
+    "FinlightStream",
+    "AdmittedInfo",
+    "ReconnectInfo",
+    "QuotaWaitInfo",
     "WebSocketConnection",
     "DialRefused",
     "WebSocketClosed",
@@ -165,7 +170,7 @@ async def _default_connect(
     from websockets.exceptions import InvalidStatus
 
     options = dict(config.websocket_options)
-    options.setdefault("open_timeout", 15)
+    options.setdefault("open_timeout", config.connect_timeout)
     options.setdefault("close_timeout", 5)
     try:
         ws = await connect(
@@ -201,6 +206,47 @@ class _Outcome:
 _END = object()
 
 
+@dataclass(frozen=True)
+class AdmittedInfo:
+    """Passed to ``on_admitted`` for each ``connection.admitted``.
+
+    It arrives before the server checks the subscribe and does not mean the subscribe was accepted.
+    """
+
+    lease_id: Optional[str]
+    server_now: Optional[int]
+    client_nonce: Optional[str]
+
+
+@dataclass(frozen=True)
+class ReconnectInfo:
+    """Passed to ``on_reconnect`` after every new connection but the first.
+
+    ``last_seen_at``: latest ``availableAt`` (fallback ``firstSeenAt``; raw: ``firstSeenAt``)
+    delivered so far, or ``None``. ``reason``: why the previous connection ended or the
+    last dial failed (``ReconnectReason``). ``connection``: number of connections of this
+    stream, the new one included.
+    """
+
+    last_seen_at: Optional[str]
+    reason: str
+    connection: int
+
+
+@dataclass(frozen=True)
+class QuotaWaitInfo:
+    """Passed to ``on_quota_wait`` whenever the stream waits for a new WebSocket quota.
+
+    ``error`` is the ``PreemptedError`` (reason ``quota_exceeded``) or the refused dial
+    (``ForbiddenError``, status 403). ``next_attempt_in`` is in seconds; ``attempt`` counts
+    the waits in a row, from 1.
+    """
+
+    error: BaseException
+    next_attempt_in: float
+    attempt: int
+
+
 def _closed_outcome(exc: WebSocketClosed) -> _Outcome:
     if exc.code == 1008:
         error = FinlightApiError(
@@ -212,7 +258,7 @@ def _closed_outcome(exc: WebSocketClosed) -> _Outcome:
 
 
 class _Session:
-    def __init__(self, stream: Stream, conn: WebSocketConnection, nonce: str) -> None:
+    def __init__(self, stream: FinlightStream, conn: WebSocketConnection, nonce: str) -> None:
         self.stream = stream
         self.conn = conn
         self.nonce = nonce
@@ -277,9 +323,9 @@ class _Session:
         clock = cfg.clock
         while not self.outcome.done():
             now = clock.monotonic()
-            watchdog_at = self.last_pong + cfg.pong_timeout
+            watchdog_at = self.last_pong + cfg.watchdog_timeout
             if now >= watchdog_at:
-                logger.warning("finlight: no pong for %.0f s, reconnecting", cfg.pong_timeout)
+                logger.warning("finlight: no pong for %.0f s, reconnecting", cfg.watchdog_timeout)
                 self.finish(_Outcome("reconnect", reason="watchdog", delay=0.0))
                 return
             rotate_at = self.opened_at + cfg.rotation_interval
@@ -302,8 +348,9 @@ class _Session:
             await clock.sleep(max(0.0, wake - now))
 
 
-class Stream:
-    """An async iterator of :class:`StreamEvent`. Iterate it once.
+class FinlightStream:
+    """An async iterator of :class:`StreamEvent`. Iterate it once (a second time raises
+    :class:`FinlightValidationError`).
 
     Prefer ``async with client.stream(...) as stream: async for ev in stream``:
     leaving the block closes the socket with code 1000 and stops every timer.
@@ -316,11 +363,17 @@ class Stream:
         frame: dict[str, Any],
         *,
         raw: bool,
+        takeover: bool = False,
         on_reconnect: Optional[Hook] = None,
         on_admitted: Optional[Hook] = None,
         on_error: Optional[Hook] = None,
+        on_quota_wait: Optional[Hook] = None,
     ) -> None:
         self._config = config
+        self._takeover = takeover
+        self._on_quota_wait = on_quota_wait
+        self._quota_attempt = 0
+        self._connections = 0
         self._frame = frame
         self._raw = raw
         self._url = config.ws_url(raw)
@@ -338,27 +391,27 @@ class Stream:
         self._search_failed = 0
         self._last_seen: Optional[str] = None
         self._last_seen_time: Optional[datetime] = None
-        self.dial_count = 0
+        self._dial_count = 0
 
     # -- public -------------------------------------------------------------
 
     @property
-    def last_seen(self) -> Optional[str]:
+    def last_seen_at(self) -> Optional[str]:
         """Latest timestamp seen: ``availableAt`` (fallback ``firstSeenAt``) on enriched, ``firstSeenAt`` on raw."""
         return self._last_seen
 
     @property
-    def subscribe_frame(self) -> dict[str, Any]:
-        """The subscribe frame this stream sends (``clientNonce`` is added per connection)."""
-        return dict(self._frame)
+    def closed(self) -> bool:
+        """True once the stream was closed or ended."""
+        return self._closed
 
     def __aiter__(self) -> AsyncIterator[StreamEvent]:
         if self._iterated:
-            raise RuntimeError("a stream can be iterated only once; call stream() again")
+            raise FinlightValidationError("a stream can be iterated only once; call stream() again")
         self._iterated = True
         return self._iterate()
 
-    async def __aenter__(self) -> Stream:
+    async def __aenter__(self) -> FinlightStream:
         return self
 
     async def __aexit__(self, *exc_info: Any) -> None:
@@ -417,22 +470,22 @@ class Stream:
 
     def _backoff(self, attempt: int) -> float:
         cfg = self._config
-        delay = min(cfg.reconnect_backoff_max, cfg.reconnect_backoff_base * (2**attempt))
+        delay = min(cfg.reconnect_max_delay, cfg.reconnect_base_delay * (2**attempt))
         return float(delay * (0.5 + 0.5 * cfg.random()))
 
     def _long_backoff(self) -> float:
         cfg = self._config
-        return float(cfg.connection_limit_backoff * (1 + 0.25 * cfg.random()))
+        return float(cfg.long_backoff * (1 + 0.25 * cfg.random()))
 
     def _headers(self) -> list[tuple[str, str]]:
         # Exactly lowercase: the gateway looks the key up case-sensitively.
         headers = [("x-api-key", self._config.api_key), ("x-client-version", __version__)]
-        if self._config.takeover:
+        if self._takeover:
             headers.append(("x-takeover", "true"))
         return headers
 
     async def _dial(self) -> WebSocketConnection:
-        self.dial_count += 1
+        self._dial_count += 1
         connect = self._config.websocket_connect
         if connect is not None:
             conn: WebSocketConnection = await connect(self._url, self._headers())
@@ -475,8 +528,10 @@ class Stream:
                         self._end(verdict.error)
                         return
                     if verdict.kind == "quota":
+                        reconnect_reason = "quota_exceeded"
                         delay = self._quota_wait(verdict.error)
                         continue
+                    reconnect_reason = verdict.reason
                     if verdict.error is not None:
                         self._emit_error(verdict.error)
                     if verdict.kind == "long":
@@ -495,6 +550,7 @@ class Stream:
                         current = None
                     error = FinlightNetworkError(f"WebSocket dial failed: {type(exc).__name__}")
                     error.__cause__ = exc
+                    reconnect_reason = "dial_failed"
                     self._emit_error(error)
                     delay = self._backoff(attempt)
                     attempt += 1
@@ -502,6 +558,7 @@ class Stream:
                     continue
 
                 session = _Session(self, conn, self._nonce())
+                self._connections += 1
                 self._sessions.append(session)
                 try:
                     await session.start(self._frame)
@@ -518,8 +575,9 @@ class Stream:
                     if old in self._sessions:
                         self._sessions.remove(old)
                 current = session
-                if reconnect_reason is not None:
-                    self._call_hook(self._on_reconnect, self._last_seen, reconnect_reason)
+                if self._connections > 1:
+                    info = ReconnectInfo(self._last_seen, reconnect_reason or "closed", self._connections)
+                    self._call_hook(self._on_reconnect, info)
 
                 outcome = await session.outcome
                 if outcome.kind == "terminal":
@@ -552,16 +610,19 @@ class Stream:
             raise
         except Exception as exc:  # noqa: BLE001 - never let the supervisor die silently
             logger.error("finlight: stream failed: %s", type(exc).__name__)
-            failure = FinlightError(f"stream failed: {type(exc).__name__}")
+            failure = FinlightNetworkError(f"stream failed: {type(exc).__name__}")
             failure.__cause__ = exc
             self._end(failure)
 
     def _quota_wait(self, error: Optional[BaseException]) -> float:
-        """Monthly WebSocket quota exhausted: report it and wait for the next hourly attempt."""
+        """Monthly WebSocket quota exhausted: report it to on_quota_wait (only) and wait the interval."""
         delay = float(self._config.quota_reconnect_interval)
-        logger.warning("finlight: WebSocket quota exhausted, trying again in %.0f s", delay)
+        self._quota_attempt += 1
+        logger.warning(
+            "finlight: WebSocket quota exhausted, trying again in %.0f s (wait %d)", delay, self._quota_attempt
+        )
         if error is not None:
-            self._emit_error(error)
+            self._call_hook(self._on_quota_wait, QuotaWaitInfo(error, delay, self._quota_attempt))
         return delay
 
     def _retire(self, session: _Session) -> None:
@@ -584,9 +645,11 @@ class Stream:
             return
         if ftype == _frames.ADMITTED:
             session.admitted = True
+            self._quota_attempt = 0
             f = frame.fields
             logger.debug("finlight: connection admitted")
-            self._call_hook(self._on_admitted, f.get("lease_id"), f.get("server_now"), f.get("client_nonce"))
+            info = AdmittedInfo(f.get("lease_id"), f.get("server_now"), f.get("client_nonce"))
+            self._call_hook(self._on_admitted, info)
             return
         if ftype == _frames.ARTICLE:
             self._deliver_article(frame)
@@ -621,7 +684,6 @@ class Stream:
             event=frame.event or "",
             kind="other",
             data=None,
-            payload_version=frame.raw.get("payloadVersion") if isinstance(frame.raw, dict) else None,
             _raw=frame.raw,
         )
         self._put(event)
@@ -679,7 +741,7 @@ class Stream:
             logger.debug("finlight: dropped a duplicate delivery")
             return
         self._dedupe[key] = None
-        while len(self._dedupe) > self._config.dedupe_size:
+        while len(self._dedupe) > self._config.dedupe_cache_size:
             self._dedupe.popitem(last=False)
         self._search_failed = 0
         seen = article.first_seen_at if self._raw else (article.available_at or article.first_seen_at)
@@ -691,7 +753,6 @@ class Stream:
             event=frame.event or "",
             kind=frame.kind or "other",
             data=article,
-            payload_version=frame.raw.get("payloadVersion") if isinstance(frame.raw, dict) else None,
             _raw=frame.raw,
         )
         self._put(event)
@@ -731,6 +792,7 @@ class Stream:
 class _DialVerdict:
     kind: str  # "terminal" | "quota" | "long" | "backoff"
     error: Optional[FinlightApiError]
+    reason: str = "dial_refused"
 
 
 def _dial_message(body: Optional[bytes]) -> Optional[str]:
@@ -760,12 +822,12 @@ def _classify_dial(status: int, body: Optional[bytes]) -> _DialVerdict:
         if message and message.startswith("WebSocket quota exceeded"):
             return _DialVerdict("quota", ForbiddenError(text, status=403, detail=message, raw=raw))
         if message and message.startswith("Too many concurrent connections"):
-            hint = text + ". Another connection holds the slot; set takeover=True to replace it."
-            return _DialVerdict("long", ForbiddenError(hint, status=403, detail=message, raw=raw))
+            hint = text + ". Another connection holds the slot; pass takeover=True to stream() to replace it."
+            return _DialVerdict("long", ForbiddenError(hint, status=403, detail=message, raw=raw), "connection_limit")
         # Body missing or unknown: long wait plus a report.
         return _DialVerdict("long", ForbiddenError(text, status=403, detail=message, raw=raw))
     if status == 429:
-        return _DialVerdict("long", RateLimitedError(text, status=429, detail=message, raw=raw))
+        return _DialVerdict("long", RateLimitedError(text, status=429, detail=message, raw=raw), "rate_limited")
     if status >= 500:
-        return _DialVerdict("backoff", FinlightApiError(text, status=status, detail=message, raw=raw))
+        return _DialVerdict("backoff", InternalServerError(text, status=status, detail=message, raw=raw))
     return _DialVerdict("terminal", FinlightApiError(text, status=status, detail=message, raw=raw))

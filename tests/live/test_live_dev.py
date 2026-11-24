@@ -19,10 +19,12 @@ from urllib.parse import urlparse
 import pytest
 
 from finlight_client import (
+    AdmittedInfo,
     FinlightClient,
     ForbiddenError,
     NotFoundError,
     UnauthorizedError,
+    cache_info,
 )
 
 pytestmark = pytest.mark.live
@@ -109,8 +111,9 @@ def test_companies(client: FinlightClient) -> None:
         pytest.skip("key has no entityAccess")
     assert matches
     record = client.companies.get(matches[0].company_id)
-    assert record.etag
-    again = client.companies.get(matches[0].company_id)
+    info = cache_info(record)
+    assert info is not None and info.etag and not info.not_modified
+    again = client.companies.get(matches[0].company_id)  # revalidated with the ETag
     assert again.company_id == record.company_id
     mics = [listing.mic for listing in record.listings]
     assert len(mics) == len(set(mics)), "listings name each exchange at most once (contract rc.2)"
@@ -121,7 +124,7 @@ def test_companies(client: FinlightClient) -> None:
 async def _first_admitted(make_stream: Any, timeout: float = 20.0) -> tuple[Any, list[Any]]:
     admitted: asyncio.Future[Any] = asyncio.get_running_loop().create_future()
     items: list[Any] = []
-    stream = make_stream(lambda *a: admitted.done() or admitted.set_result(a))
+    stream = make_stream(lambda info: admitted.done() or admitted.set_result(info))
 
     async def consume() -> None:
         async for event in stream:
@@ -139,21 +142,22 @@ async def _first_admitted(make_stream: Any, timeout: float = 20.0) -> tuple[Any,
 
 async def test_stream_admitted(client: FinlightClient) -> None:
     errors: list[Any] = []
-    (lease_id, server_now, nonce), items = await _first_admitted(
+    info, items = await _first_admitted(
         lambda hook: client.stream(query="ticker:NVDA", include=["companies"], on_error=errors.append,
                                    on_admitted=hook)
     )
-    assert lease_id and isinstance(server_now, int) and nonce
+    assert isinstance(info, AdmittedInfo)
+    assert info.lease_id and isinstance(info.server_now, int) and info.client_nonce
     assert errors == []
     for item in items:
         assert item.kind in ("created", "updated", "other")
 
 
 async def test_raw_stream_admitted(client: FinlightClient) -> None:
-    (lease_id, _, _), items = await _first_admitted(
+    info, items = await _first_admitted(
         lambda hook: client.raw_stream(query="ticker:NVDA", on_admitted=hook)
     )
-    assert lease_id
+    assert info.lease_id
     for item in items:
         assert item.data is None or item.data.available_at is None
 

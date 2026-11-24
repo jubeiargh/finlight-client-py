@@ -26,6 +26,7 @@
   },
   "expect": {
     "code": "UNAUTHORIZED",
+    "apiKind": "unauthorized",
     "retry": "never"
   }
 }

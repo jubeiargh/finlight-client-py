@@ -14,17 +14,14 @@ from ._params import SEARCH_FIELDS, TimeValue, build_body, dumps, include_query
 from .errors import FinlightDecodeError, FinlightValidationError
 from .models import Article, ArticlePage, decode_article, decode_article_page
 
-__all__ = ["ArticlesService", "SearchAll"]
+__all__ = ["ArticlesService", "SearchAllResult"]
 
 logger = logging.getLogger("finlight_client")
 
 
-def _search_values(**values: Any) -> dict[str, Any]:
-    return values
-
-
-class SearchAll:
-    """Result of :meth:`ArticlesService.search_all`. Iterate it once.
+class SearchAllResult:
+    """Result of :meth:`ArticlesService.search_all`. Iterate it once (a second time raises
+    :class:`FinlightValidationError`).
 
     Iterating yields articles; :meth:`pages` yields whole pages instead.
     The request body is frozen when ``search_all`` is called; later pages only
@@ -32,7 +29,7 @@ class SearchAll:
     ``nextCursor`` is null, or after ``max_pages`` pages. In the last case a
     warning is logged, ``truncated`` is True and ``next_cursor`` holds the
     cursor to continue with (pass it as ``cursor=`` to a new ``search_all``).
-    Errors are raised during iteration.
+    Errors are raised during iteration. A monthly 429 ends it at once; it never waits.
     """
 
     def __init__(self, http: HttpTransport, body: dict[str, Any], max_pages: int) -> None:
@@ -46,7 +43,7 @@ class SearchAll:
 
     def _claim(self) -> None:
         if self._started:
-            raise RuntimeError("search_all results can be iterated only once; call search_all again")
+            raise FinlightValidationError("search_all results can be iterated only once; call search_all again")
         self._started = True
 
     def _body_for(self, cursor: Optional[str]) -> bytes:
@@ -155,7 +152,7 @@ class ArticlesService:
         cursor: Optional[str] = None,
         include: Optional[Sequence[str]] = None,
         max_pages: Optional[int] = None,
-    ) -> SearchAll:
+    ) -> SearchAllResult:
         """All pages of a search, as articles (or pages via ``.pages()``).
 
         Arguments are checked now; requests are sent while you iterate.
@@ -167,14 +164,14 @@ class ArticlesService:
         if pages is None:
             pages = self._config.max_pages
         if isinstance(pages, bool) or not isinstance(pages, int) or pages < 1:
-            raise FinlightValidationError("max_pages must be an integer >= 1")
+            raise FinlightValidationError("max_pages must be an integer >= 1", param="max_pages")
         body = build_body(SEARCH_FIELDS, values)
-        return SearchAll(self._http, body, pages)
+        return SearchAllResult(self._http, body, pages)
 
     def get(self, id: str, *, include: Optional[Sequence[str]] = None) -> Article:
         """``GET /v3/articles/{id}``. A miss raises ``NotFoundError``."""
         if not isinstance(id, str) or not id:
-            raise FinlightValidationError("id must be a non-empty string")
+            raise FinlightValidationError("id must be a non-empty string", param="id")
         query = include_query(include)
         resp = self._http.call("GET", "/v3/articles/" + quote(id, safe=""), query=query)
         return _article_envelope(resp.json())
@@ -182,7 +179,7 @@ class ArticlesService:
     def get_by_link(self, link: str, *, include: Optional[Sequence[str]] = None) -> Article:
         """``GET /v3/articles/by-link``. The link must match exactly. A miss raises ``NotFoundError``."""
         if not isinstance(link, str) or not link:
-            raise FinlightValidationError("link must be a non-empty string")
+            raise FinlightValidationError("link must be a non-empty string", param="link")
         query = [("link", link)] + include_query(include)
         resp = self._http.call("GET", "/v3/articles/by-link", query=query)
         return _article_envelope(resp.json())

@@ -10,10 +10,10 @@ from __future__ import annotations
 
 __all__ = [
     "PAYLOAD_VERSION",
-    "Include",
+    "IncludeBlock",
     "OrderBy",
-    "Order",
-    "Role",
+    "SortOrder",
+    "CompanyRole",
     "EventType",
     "EventDirection",
     "Importance",
@@ -24,13 +24,15 @@ __all__ = [
     "PreemptReason",
     "ProblemCode",
     "WebhookEventName",
-    "LimitType",
+    "RateLimitType",
+    "StreamEventKind",
+    "ReconnectReason",
 ]
 
 PAYLOAD_VERSION = 3
 
 
-class Include:
+class IncludeBlock:
     CONTENT = "content"
     COMPANIES = "companies"
     EVENTS = "events"
@@ -45,13 +47,13 @@ class OrderBy:
     ALL = (PUBLISHED_AT, FIRST_SEEN_AT, REVISED_AT, AVAILABLE_AT)
 
 
-class Order:
+class SortOrder:
     ASC = "asc"
     DESC = "desc"
     ALL = (ASC, DESC)
 
 
-class Role:
+class CompanyRole:
     ACQUIRER = "acquirer"
     TARGET = "target"
     SELLER = "seller"
@@ -213,9 +215,47 @@ class ProblemCode:
     }
 
 
-class LimitType:
-    """``limitType`` of a 429 ``RATE_LIMITED`` problem (open list)."""
+class RateLimitType:
+    """``limitType`` of a 429 ``RATE_LIMITED`` problem (open list). ``UNKNOWN`` is the SDK's
+    value when the server sent no ``limitType`` and the detail text did not tell."""
 
     MONTHLY = "monthly"
     BURST = "burst"
+    UNKNOWN = "unknown"
     ALL = (MONTHLY, BURST)
+
+
+class StreamEventKind:
+    """``StreamEvent.kind``."""
+
+    CREATED = "created"
+    UPDATED = "updated"
+    OTHER = "other"
+    ALL = (CREATED, UPDATED, OTHER)
+
+
+class ReconnectReason:
+    """``ReconnectInfo.reason`` (open list)."""
+
+    ROTATION = "rotation"
+    WATCHDOG = "watchdog"
+    CLOSED = "closed"
+    HANDSHAKE_FAILED = "handshake_failed"
+    SEARCH_FAILED = "search_failed"
+    DIAL_FAILED = "dial_failed"
+    DIAL_REFUSED = "dial_refused"
+    CONNECTION_LIMIT = "connection_limit"
+    RATE_LIMITED = "rate_limited"
+    QUOTA_EXCEEDED = "quota_exceeded"
+    ALL = (
+        ROTATION,
+        WATCHDOG,
+        CLOSED,
+        HANDSHAKE_FAILED,
+        SEARCH_FAILED,
+        DIAL_FAILED,
+        DIAL_REFUSED,
+        CONNECTION_LIMIT,
+        RATE_LIMITED,
+        QUOTA_EXCEEDED,
+    )

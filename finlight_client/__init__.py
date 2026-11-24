@@ -8,7 +8,7 @@ import logging as _logging
 
 from ._config import FinlightConfig
 from ._version import __version__
-from .articles import SearchAll
+from .articles import SearchAllResult
 from .client import FinlightClient
 from .companies import CompanyList
 from .errors import (
@@ -34,6 +34,7 @@ from .models import (
     Article,
     ArticlePage,
     ArticleSource,
+    CacheInfo,
     Company,
     CompanyRecord,
     EventTag,
@@ -41,34 +42,46 @@ from .models import (
     Media,
     Pagination,
     Sentiment,
-    SkippedItem,
+    SkippedEntry,
     Source,
     StreamEvent,
     WebhookEvent,
     WrongPayloadVersion,
+    cache_info,
     raw_json,
     to_wire,
 )
 from .sources import SourceList
-from .stream import DialRefused, Stream, WebSocketClosed, WebSocketConnection
+from .stream import (
+    AdmittedInfo,
+    DialRefused,
+    FinlightStream,
+    QuotaWaitInfo,
+    ReconnectInfo,
+    WebSocketClosed,
+    WebSocketConnection,
+)
 from .vocab import (
+    PAYLOAD_VERSION,
+    CompanyRole,
     ConnectionErrorCode,
     EventDirection,
     EventType,
     Importance,
-    Include,
-    LimitType,
-    Order,
+    IncludeBlock,
     OrderBy,
     PreemptReason,
     ProblemCode,
-    Role,
+    RateLimitType,
+    ReconnectReason,
     SentimentLabel,
+    SortOrder,
     SourceType,
+    StreamEventKind,
     StreamEventName,
     WebhookEventName,
 )
-from .webhooks import Webhooks
+from .webhooks import DEFAULT_WEBHOOK_TOLERANCE, Webhooks
 
 _logging.getLogger("finlight_client").addHandler(_logging.NullHandler())
 
@@ -89,18 +102,24 @@ __all__ = [
     "Source",
     "Pagination",
     "ArticlePage",
-    "SkippedItem",
+    "SkippedEntry",
+    "CacheInfo",
     "StreamEvent",
     "WebhookEvent",
     "WrongPayloadVersion",
-    "SearchAll",
+    "SearchAllResult",
     "CompanyList",
     "SourceList",
-    "Stream",
+    "FinlightStream",
+    "AdmittedInfo",
+    "ReconnectInfo",
+    "QuotaWaitInfo",
     "raw_json",
+    "cache_info",
     "to_wire",
     # webhooks
     "Webhooks",
+    "DEFAULT_WEBHOOK_TOLERANCE",
     # errors
     "FinlightError",
     "FinlightApiError",
@@ -124,10 +143,11 @@ __all__ = [
     "DialRefused",
     "WebSocketClosed",
     # vocabularies
-    "Include",
+    "PAYLOAD_VERSION",
+    "IncludeBlock",
     "OrderBy",
-    "Order",
-    "Role",
+    "SortOrder",
+    "CompanyRole",
     "EventType",
     "EventDirection",
     "Importance",
@@ -138,5 +158,7 @@ __all__ = [
     "ConnectionErrorCode",
     "PreemptReason",
     "ProblemCode",
-    "LimitType",
+    "RateLimitType",
+    "StreamEventKind",
+    "ReconnectReason",
 ]

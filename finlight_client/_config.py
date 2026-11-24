@@ -50,10 +50,16 @@ class FinlightConfig:
         seconds, or ``burst_wait`` (10) without the header, then try once more)
         or ``"off"``.
         ``max_pages`` caps ``articles.search_all`` (default 10).
+        ``company_cache_size`` (256, 0 turns it off) is the number of company
+        records ``companies.get`` keeps for ETag revalidation.
 
     WebSocket:
-        ``ping_interval`` (25 s), ``pong_timeout`` (60 s) and
+        ``ping_interval`` (25 s), ``watchdog_timeout`` (60 s) and
         ``rotation_interval`` (115 min) keep connections alive and fresh.
+        ``connect_timeout`` (30 s) caps the WebSocket handshake. Reconnects wait
+        ``reconnect_base_delay`` (1 s) growing to ``reconnect_max_delay`` (30 s);
+        a refusal for the connection limit or a 429 waits ``long_backoff`` (60 s).
+        ``takeover`` is an option of ``stream()``/``raw_stream()``, not of the config.
         When the monthly WebSocket quota is exhausted, the stream tries again
         every ``quota_reconnect_interval`` seconds (1 hour) while
         ``quota_reconnect`` is True (default); with False it ends with the error.
@@ -72,25 +78,26 @@ class FinlightConfig:
     timeout: float = 30.0
     total_timeout: Optional[float] = None
     max_retries: int = 3
-    retry_backoff_base: float = 0.5
-    retry_backoff_max: float = 8.0
+    retry_base_delay: float = 0.5
+    retry_max_delay: float = 8.0
     retry_on_burst: str = "once"
     burst_wait: float = 10.0
     max_pages: int = 10
     max_response_bytes: int = 32 * 1024 * 1024
+    company_cache_size: int = 256
 
     ping_interval: float = 25.0
-    pong_timeout: float = 60.0
+    watchdog_timeout: float = 60.0
     rotation_interval: float = 115 * 60.0
-    reconnect_backoff_base: float = 0.5
-    reconnect_backoff_max: float = 30.0
-    connection_limit_backoff: float = 60.0
+    reconnect_base_delay: float = 1.0
+    reconnect_max_delay: float = 30.0
+    long_backoff: float = 60.0
     search_failed_threshold: int = 5
     quota_reconnect: bool = True
     quota_reconnect_interval: float = 3600.0
-    takeover: bool = False
-    dedupe_size: int = 1000
-    max_message_bytes: int = 16 * 1024 * 1024
+    dedupe_cache_size: int = 1000
+    max_message_bytes: int = 32 * 1024 * 1024
+    connect_timeout: float = 30.0
 
     session: Optional[requests.Session] = field(default=None, repr=False, compare=False)
     websocket_options: Mapping[str, Any] = field(default_factory=dict, repr=False)
@@ -122,8 +129,12 @@ class FinlightConfig:
             raise FinlightValidationError("max_pages must be an integer >= 1")
         if self.quota_reconnect_interval <= 0:
             raise FinlightValidationError("quota_reconnect_interval must be > 0")
-        if self.ping_interval <= 0 or self.pong_timeout <= 0 or self.rotation_interval <= 0:
-            raise FinlightValidationError("ping_interval, pong_timeout and rotation_interval must be > 0")
+        if isinstance(self.company_cache_size, bool) or not isinstance(self.company_cache_size, int) or self.company_cache_size < 0:
+            raise FinlightValidationError("company_cache_size must be an integer >= 0")
+        if self.max_message_bytes < 16 * 1024 * 1024 or self.connect_timeout <= 0:
+            raise FinlightValidationError("max_message_bytes must be at least 16 MiB and connect_timeout > 0")
+        if self.ping_interval <= 0 or self.watchdog_timeout <= 0 or self.rotation_interval <= 0:
+            raise FinlightValidationError("ping_interval, watchdog_timeout and rotation_interval must be > 0")
 
     def __repr__(self) -> str:
         return f"FinlightConfig(base_url={self.base_url!r}, wss_url={self.wss_url!r}, api_key=***)"

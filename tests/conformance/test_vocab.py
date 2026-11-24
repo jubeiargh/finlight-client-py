@@ -5,19 +5,19 @@ from __future__ import annotations
 import pytest
 
 from finlight_client import (
+    CompanyRole,
     ConnectionErrorCode,
     EventDirection,
     EventType,
     FinlightConfig,
     Importance,
-    Include,
-    LimitType,
-    Order,
+    IncludeBlock,
     OrderBy,
     PreemptReason,
     ProblemCode,
-    Role,
+    RateLimitType,
     SentimentLabel,
+    SortOrder,
     SourceType,
     StreamEventName,
     WebhookEventName,
@@ -33,10 +33,10 @@ def test_vocab(case: str) -> None:
     req, resp, ws = vocab["request"], vocab["response"], vocab["websocket"]
     assert PAYLOAD_VERSION == vocab["payloadVersion"] == 3
 
-    assert list(Include.ALL) == req["include"]["values"]
+    assert list(IncludeBlock.ALL) == req["include"]["values"]
     assert list(OrderBy.ALL) == req["orderBy"]["values"]
-    assert list(Order.ALL) == req["order"]["values"]
-    assert list(Role.ALL) == req["roles"]["values"] == resp["roles"]["values"]
+    assert list(SortOrder.ALL) == req["order"]["values"]
+    assert list(CompanyRole.ALL) == req["roles"]["values"] == resp["roles"]["values"]
     assert list(EventType.ALL) == req["eventTypes"]["values"] == resp["eventTypes"]["values"]
     assert list(EventDirection.ALL) == req["eventDirections"]["values"] == resp["eventDirections"]["values"]
     assert list(Importance.ALL) == req["minImportance"]["values"] == resp["importance"]["values"]
@@ -51,12 +51,11 @@ def test_vocab(case: str) -> None:
     assert list(WebhookEventName.ALL) == vocab["webhook"]["events"]["values"]
 
     assert [{"code": c, "type": ProblemCode.TYPES[c]} for c in ProblemCode.ALL] == vocab["problemCodes"]["values"]
-    if "limitTypes" in vocab:
-        assert list(LimitType.ALL) == vocab["limitTypes"]["values"]
+    assert list(RateLimitType.ALL) == vocab["limitTypes"]["values"]
 
     defaults = FinlightConfig(api_key="k")
     assert defaults.ping_interval * 1000 == ws["heartbeatMs"]
-    assert defaults.pong_timeout * 1000 == ws["staleMs"]
+    assert defaults.watchdog_timeout * 1000 == ws["staleMs"]
     assert defaults.rotation_interval * 1000 < ws["maxLifetimeMs"]
 
     # Response enums are open: unknown strings survive decoding unchanged.

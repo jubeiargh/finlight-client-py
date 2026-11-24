@@ -31,8 +31,8 @@ async def capture_dial(raw: bool, takeover: bool = False) -> bytes:
     server = await asyncio.start_server(handle, "127.0.0.1", 0)
     port = server.sockets[0].getsockname()[1]
     try:
-        client = FinlightClient(api_key=KIT_KEY, wss_url=f"ws://127.0.0.1:{port}", takeover=takeover)
-        stream = client.raw_stream(query="x") if raw else client.stream(query="x")
+        client = FinlightClient(api_key=KIT_KEY, wss_url=f"ws://127.0.0.1:{port}")
+        stream = client.raw_stream(query="x", takeover=takeover) if raw else client.stream(query="x", takeover=takeover)
         with pytest.raises(UnauthorizedError) as info:
             async for _ in stream:
                 pass

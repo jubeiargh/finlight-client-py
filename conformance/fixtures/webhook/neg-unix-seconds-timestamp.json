@@ -20,7 +20,7 @@
   "expect": {
     "signatureValid": false,
     "outcome": "error",
-    "error": "WebhookSignatureError",
-    "reason": "unparseable timestamp"
+    "error": "WebhookVerificationError",
+    "reason": "unparseable_timestamp"
   }
 }

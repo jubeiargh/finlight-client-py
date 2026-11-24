@@ -35,6 +35,7 @@
   },
   "expect": {
     "code": "NOT_FOUND",
+    "apiKind": "not_found",
     "retry": "never"
   }
 }

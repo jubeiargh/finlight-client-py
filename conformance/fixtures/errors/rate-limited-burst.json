@@ -28,6 +28,7 @@
   },
   "expect": {
     "code": "RATE_LIMITED",
+    "apiKind": "rate_limited",
     "retry": "once-after-burst-wait"
   }
 }

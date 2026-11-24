@@ -2,6 +2,9 @@
   "id": "S-24",
   "title": "Dial refused: WebSocket quota exhausted",
   "endpoint": "enriched",
+  "clientConfig": {
+    "quotaReconnect": true
+  },
   "note": "Most WebSocket libraries expose only the status of a refused upgrade; the body is given for those that expose it.",
   "steps": [
     {
@@ -17,9 +20,16 @@
     },
     {
       "step": "expect",
-      "outcome": "terminalError",
-      "error": "DialError",
-      "status": 403
+      "outcome": "reconnect",
+      "backoff": "quota",
+      "firstRetryMinMs": 3600000,
+      "reported": {
+        "hook": "onQuotaWait",
+        "error": "FinlightApiError",
+        "apiKind": "forbidden",
+        "status": 403,
+        "attempt": 1
+      }
     }
   ]
 }

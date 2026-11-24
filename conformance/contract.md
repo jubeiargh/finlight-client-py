@@ -191,8 +191,9 @@ and `message`. Infrastructure in front of the API can answer with a non-JSON bod
 
 **Retry model (all clients)**
 - Never retried: 400, 401, 403, 404, and a 429 with `limitType` `monthly` (or a value the client does not know).
-- Burst 429 (`limitType: "burst"`): one retry after `Retry-After` seconds, 10 when the header is missing
-  (configurable, can be switched off).
+  A REST call never waits for a new quota period: a monthly 429 fails at once, inside `searchAll` too.
+- Burst 429 (`limitType: "burst"`): one retry after exactly `Retry-After` seconds, 10 when the header is missing.
+  On by default, can be switched off; it does not count against the normal retries.
 - 5xx, non-JSON gateway errors and network errors: exponential backoff, POST search included.
 - One `X-Request-Id` per logical call, reused on every retry.
 
@@ -213,7 +214,7 @@ and `message`. Infrastructure in front of the API can answer with a non-JSON bod
 | 401 | `{"message":"Invalid API key"}` / `{"message":"Invalid API key format"}` | Invalid key. | terminal |
 | 403 | `{"message":"Your subscription does not include WebSockets"}` | Plan without WebSockets. | terminal |
 | 403 | `{"message":"Too many concurrent connections. Use x-takeover: true header to replace an existing connection."}` | At the connection limit. | reconnect, long backoff (first retry after about 60 s), takeover hint |
-| 403 | `{"message":"WebSocket quota exceeded for the current period"}` | Delivery quota used up. | terminal |
+| 403 | `{"message":"WebSocket quota exceeded for the current period"}` | Delivery quota used up. | redial once per hour, each attempt reported (default; terminal when switched off) |
 | 403 | `{"message":"Too many concurrent connections"}` | Lost a race at admission. | reconnect with backoff |
 | 500 | `{"error":"Internal server error"}` | Server error. | reconnect with backoff |
 
@@ -273,9 +274,12 @@ dispatches on `event` first and falls back to `action`. This is protocol handlin
 
 - Ping with `{"action":"ping","t":<number>}` every 25 s. Either pong form refreshes a 60 s watchdog; without a pong
   for 60 s the client reconnects and re-sends the same subscribe.
-- Terminal (stream ends with a typed error, no reconnect): dial 401; dial 403 "does not include WebSockets"; dial 403
-  "quota exceeded"; `VALIDATION_FAILED`; `connection.preempted` (either reason, as `PreemptedError{reason, newLeaseId}`);
-  close code 1008.
+- Terminal (stream ends with a typed error, no reconnect): dial 401; dial 403 "does not include WebSockets";
+  `VALIDATION_FAILED`; `connection.preempted` with reason `connection_limit` (as `PreemptedError{reason, newLeaseId}`);
+  close code 1008. Dial refusals and `VALIDATION_FAILED` surface as `FinlightApiError` (kind from the status or code).
+- Quota exhausted (dial 403 "quota exceeded", `connection.preempted` with reason `quota_exceeded`): by default the
+  stream keeps running and redials once per hour until the quota allows it; every wait is logged as a warning and
+  passed to a quota hook. Switched off, both are terminal (`FinlightApiError` 403 and `PreemptedError`).
 - Reconnect with backoff: dial 403 "Too many concurrent connections"; dial 5xx; `HANDSHAKE_FAILED`; `SEARCH_FAILED`
   (surface as an error after 5 consecutive failures); abnormal close; watchdog; rotation at about 115 minutes.
 - Log only: `PING_ON_DEFAULT_ROUTE`, `INTERNAL_ERROR`, unknown codes and unknown events.
@@ -343,9 +347,9 @@ Header lookup is case-insensitive.
 
 A webhook is switched between v2 and v3 in the dashboard. Retries queued before a switch are still delivered in the
 old format for up to about 2 hours. A v3 client therefore checks `payloadVersion` after verifying the signature: a
-body without `payloadVersion: 3` is reported as **wrong payload version** (`PayloadVersionMismatch`), carrying the
-parsed JSON and its `link`, and is never decoded as a half-empty v3 event. The handler decides how to answer; a 2xx
-avoids counting the delivery as a failure.
+body without `payloadVersion: 3` is returned as a **`WrongPayloadVersion` result** (not an error; Go alone reports it
+as `*webhook.WrongPayloadVersionError`), carrying the detected version, the raw `payloadVersion`, the parsed JSON and
+its `link`, and is never decoded as a half-empty v3 event. Answer it with 2xx so the delivery does not count as a failure.
 
 ## 5. Entitlements and the absent / null / [] rules
 
@@ -367,8 +371,9 @@ Plan features that change payloads: full-article access (`content`, `/v3/sources
 | `events[].companyIds` | present iff `companies` is present in the same payload | n/a |
 | `availableAt` | always present, nullable | always null |
 
-Clients keep the three states apart (never coerce absent to `false`, `0` or `[]`) and offer `hasContent`,
-`hasSentiment`, `hasCompanies`, `hasEvents` helpers. Only `id`, `link`, `title` and `source.domain` are required
+Clients keep the three states apart (never coerce absent to `false`, `0` or `[]`) and offer the presence helpers
+`contentPresent`, `sentimentPresent`, `companiesPresent`, `eventsPresent` (not `hasContent`, which is a search filter
+and a `Source` field). Only `id`, `link`, `title` and `source.domain` are required
 when decoding; timestamps decode fail-soft.
 
 ## 6. Forward compatibility

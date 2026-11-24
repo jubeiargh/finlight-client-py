@@ -1,10 +1,10 @@
-# finlight-client (Python)
+# finlight client for Python
 
 *[English](README.md) | 简体中文 | [日本語](README.ja.md) | [한국어](README.ko.md)*
 
-> 本文译自 [README.md](README.md)，如有出入以英文版为准。
+> 本文译自 [README.md](README.md)，可能会稍晚更新；如有出入，以英文版为准。
 
-> **不兼容的新版本。** 3.0.0 只支持 finlight API v3。为 2.x 编写的代码不能直接运行。
+> **Breaking release.** 3.0.0 只支持 finlight API v3。为 2.x 编写的代码不能直接运行。
 > 如需继续使用 2.x（API v2），请固定 `finlight-client<3`。参见[从 2.x 迁移](#从-2x-迁移)。
 
 [finlight](https://finlight.me) 新闻 API 的 Python 客户端：通过 REST 搜索和查询金融新闻、公司和来源，
@@ -12,12 +12,12 @@
 
 ## 版本
 
-| SDK 版本 | API 版本 | 状态 |
+| SDK version | API version | Status |
 |---|---|---|
 | 3.x | v3（REST `/v3`、WebSocket `payloadVersion` 3、v3 Webhook） | 当前版本 |
 | 2.x | v2 | 不再发布新版本 |
 
-SDK 版本与 API 版本相互独立。其他支持 API v3 的 finlight SDK：TypeScript 4.x、PHP 2.x、
+SDK 版本与 API 版本相互独立。支持 API v3 的 finlight SDK：TypeScript 4.x、Python 3.x、PHP 2.x、
 Go 模块 `/v2`、.NET 2.x、Java 1.x、Ruby 1.x、Rust 0.2。
 
 ## 环境要求
@@ -37,9 +37,9 @@ pip install "finlight-client>=3,<4"
 from finlight_client import FinlightClient
 
 with FinlightClient(api_key="YOUR_API_KEY") as client:
-    page = client.articles.search(query="ticker:NVDA", limit=10, include=["companies"])
+    page = client.articles.search(query="ticker:NVDA", limit=10)
     for article in page.articles:
-        print(article.published_at, article.title)
+        print(article.title)
 ```
 
 REST 调用是同步的，实时流是异步迭代器。参数使用 snake_case，每个参数对应 API 中唯一的一个键
@@ -58,7 +58,7 @@ page = client.articles.search(
     include=["content", "companies", "events"],
     limit=50,
 )
-print(page.has_more, page.next_cursor)
+print(page.pagination.has_more, page.pagination.next_cursor)
 ```
 
 `search_all` 会自动翻页。调用时请求内容即被固定，之后的页面只追加 cursor。
@@ -72,35 +72,54 @@ if results.truncated:
     print("continue with cursor", results.next_cursor)
 ```
 
-结果只能遍历一次。未知参数会抛出 `TypeError`；形式错误（例如 `limit=0` 或 `languages=[]`）会在发送前
-抛出 `FinlightValidationError`。词表中的取值不在本地检查，因此服务器新增的取值无需更新 SDK 即可使用。
+用相同参数加上 `cursor=results.next_cursor` 再调用一次 `search_all` 即可继续。结果只能遍历一次。
+未知参数会抛出 `TypeError`；形式错误（例如 `limit=0` 或 `languages=[]`）会在发送前抛出
+`FinlightValidationError`。词表取值不在本地检查，因此服务器新增的取值无需更新 SDK 即可使用。
 
 ## 查询文章、公司和来源
 
 ```python
+from finlight_client import cache_info
+
 article = client.articles.get("EU8JwpsZ8iJehuyPZjMqRz", include=["content"])
 article = client.articles.get_by_link("https://www.reuters.com/...")
 
 companies = client.companies.search("NVDA", mic="XNAS")   # at most 10, no pages
 companies = client.companies.get_many([4821, 1001])
 company = client.companies.get(4821)                      # revalidated with its ETag next time
+print(cache_info(company))
 
 sources = client.sources.list()
 ```
 
-查不到时抛出 `NotFoundError`。公司查询需要 `entityAccess` 权限（否则抛出 `ForbiddenError`）。
+- 查不到时抛出 `NotFoundError`，绝不会返回空结果。
+- 在文章 id 上线前入库的文章只能通过链接查询。
+- 公司查询需要 `entityAccess` 权限（否则抛出 `ForbiddenError`）。
+- `companies.get` 会保留最近的记录，并用 ETag 重新验证（`company_cache_size`）。若传入自己的
+  `if_none_match=...`，304 响应返回 `None`。`cache_info(record)` 提供 `etag`、`cache_control` 和 `not_modified`。
+- `companies.search`、`companies.get_many` 和 `sources.list` 返回带 `skipped` 属性的列表；搜索页的
+  `ArticlePage.skipped` 同理。无法读取的条目会放在那里。
 
-### 读取文章
+## 缺失、null 与空值
 
-- `content` 和 `sentiment` 有三种状态。键未发送（未请求或无权限）时 `article.content_present` 为 false；
-  `content_present` 为 true 且 `article.content is None` 表示"没有文本"。`sentiment_present` 同理。
-- `companies` 和 `events` 未发送时为 `None`；文章已打标签但没有结果时为 `[]`。
-  请使用 `companies_present` 和 `events_present` 判断。
-- 只有当 `companies` 在同一响应中时，才会发送 `events[].company_ids`。
-- 时间戳保留发送时的原始字符串（`published_at`）。`published_at_time` 等 `*_time` 属性会严格解析，
+有些键取决于你的套餐或 `include`，最多有三种状态：
+
+| 状态 | 含义 | 判断方式 |
+|---|---|---|
+| 缺失 | 未请求、无权限或 raw 流 | `article.content_present` 为 `False` |
+| `None` | 已请求且有权限，但没有值 | `content_present` 为 `True` 且 `content is None` |
+| 有值 | 值本身 | `content` 有内容 |
+
+- `content` 和 `sentiment` 有全部三种状态：使用 `content_present` 和 `sentiment_present`。
+- `companies` 和 `events` 缺失时为 `None`，文章已打标签但没有结果时为 `[]`。请使用 `companies_present` 和
+  `events_present`。`[]` 绝不表示"无权限"。
+- 只有当 `companies` 在同一响应中时，`events[].company_ids` 才不为 `None`。
+- 没有 `fullArticleAccess` 时 `Source.has_content` 为 `None`：表示未知，而不是"没有正文"。
+- 时间戳保留发送时的字符串（`published_at`）。`published_at_time` 等 `*_time` 属性会严格解析，
   无法解析时返回 `None`。
-- 新版服务器返回的未知键会被忽略。`finlight_client.raw_json(article)` 可取得原始 JSON。
-- 词表取值始终是普通字符串，可与 `finlight_client` 中的常量比较（`EventType.MNA`、`Role.ACQUIRER` 等）。
+- 新版服务器返回的未知键会被忽略。`finlight_client.raw_json(article)` 可取得原始 JSON；
+  `to_wire(model)` 将模型写回 JSON，缺失的键保持缺失。
+- 词表取值始终是普通字符串，可与 `finlight_client` 中的常量比较（`EventType.MNA`、`CompanyRole.ACQUIRER` 等）。
   未知取值按原样保留。
 
 ## 实时流
@@ -116,7 +135,7 @@ async def main() -> None:
         language="en",
         include=["companies", "events"],
         include_updates=True,
-        on_reconnect=lambda last_seen, reason: print("reconnected", reason, last_seen),
+        on_reconnect=lambda info: print("reconnected", info.reason, info.last_seen_at),
     ) as stream:
         async for event in stream:
             print(event.kind, event.data.title if event.data else event.event)
@@ -127,23 +146,26 @@ asyncio.run(main())
 - `event.kind` 为 `created`、`updated` 或 `other`（本 SDK 尚不认识的事件）。
 - `client.raw_stream(query=..., sources=..., exclude_sources=..., language=..., include_updates=...)`
   推送尚未增强处理的文章：没有 `include`，也没有 content、sentiment、companies 或 events。
+- Hook 可以是普通函数或 `async def`：`on_admitted(AdmittedInfo)`；除第一次外每次新连接后的
+  `on_reconnect(ReconnectInfo)`；不会结束流的问题交给 `on_error(FinlightError)`；以及
+  `on_quota_wait(QuotaWaitInfo)`。Hook 中抛出的错误会被记录，绝不会中断流。
 - 流每 25 秒发送一次 ping，60 秒未收到 pong 时重新连接，115 分钟后建立新连接。
   每次重连后都会发送相同的订阅并丢弃重复的推送。
-- 它从不自动补数据。`on_reconnect(last_seen, reason)` 会收到你看到的最新 `availableAt`
-  （raw 为 `firstSeenAt`）。可用 `articles.search_all(from_=last_seen, order_by="availableAt")`
-  补齐缺口（raw 用 `order_by="firstSeenAt"`）。
+- 它从不自动补数据。`ReconnectInfo.last_seen_at` 是你看到的最新 `availableAt`（raw 为 `firstSeenAt`）。
+  可用 `articles.search_all(from_=info.last_seen_at, order_by="availableAt")` 补齐缺口
+  （raw 用 `order_by="firstSeenAt"`）。
 - 终止性问题会以错误结束循环：无效密钥（`UnauthorizedError`）、无 WebSocket 权限（`ForbiddenError`）、
   订阅被拒（`ValidationFailedError`），以及被其他连接接管时的 `PreemptedError`。其他问题会自动重连并交给
   `on_error`。
-- 每月 WebSocket 配额用尽时（连接被拒绝，或原因为 `quota_exceeded` 的 `PreemptedError`），流不会结束：
-  它每小时重试一次，直到配额恢复。每次尝试都会记录一条警告并调用 `on_error`。设置 `quota_reconnect=False`
-  可改为以错误结束流；`quota_reconnect_interval` 可修改间隔。
+- 每月 WebSocket 配额用尽时（连接被拒绝，或原因为 `quota_exceeded` 的抢占），流不会结束：它每小时重试一次，
+  直到配额恢复。每次等待都会记录一条警告并调用 `on_quota_wait`。设置 `quota_reconnect=False` 可改为以错误
+  结束流；`quota_reconnect_interval` 可修改间隔。
 - 离开 `async with` 代码块即关闭连接。取消操作永远不会被吞掉。
 
 需要了解的限制：
 
 - 套餐的连接数上限由 enriched、raw 以及旧版 SDK 的连接共同占用。达到上限时新连接会被拒绝，
-  SDK 会在 60 秒后重试。给客户端传入 `takeover=True` 可改为替换最旧的连接。
+  SDK 会在 60 秒后重试。给 `stream()` 或 `raw_stream()` 传入 `takeover=True` 可改为替换最旧的连接。
 - 订阅后服务器会立即推送一篇最新的匹配文章（每次重连后也会），这篇文章可能较旧。
 - 超过 32,000 字节的实时帧会被服务器静默丢弃。对长文章使用 `include=["content"]` 时可能发生。
   请通过 `articles.get` 获取。
@@ -175,7 +197,9 @@ def handle(raw_body: bytes, headers) -> int:
 - `headers` 可以是任何请求头映射或键值对列表（Flask、Django、Starlette、`http.server`、WSGI environ）。
   名称匹配不区分大小写。`construct_event_from_values(raw_body, signature, timestamp, secret)`
   直接接收两个请求头的值；`verify_signature` 只做校验。
-- 时间戳必须在 300 秒（`tolerance`）之内，前后两个方向都适用。
+- 时间戳必须在 `DEFAULT_WEBHOOK_TOLERANCE`（300 秒）之内，前后两个方向都适用。
+- `WebhookVerificationError.reason` 说明原因，例如 `signature_mismatch` 或 `timestamp_outside_tolerance`。
+  传入已解析的请求体而不是原始请求体会以 `invalid_raw_body` 失败。
 - 控制台发送的测试 Webhook 的 `result.is_test` 为 true，它不受套餐权限裁剪。
 - 永远不要返回 410：它会立即停用该 Webhook。连续 10 次非 2xx 响应也会将其停用。
 
@@ -188,28 +212,26 @@ def handle(raw_body: bytes, headers) -> int:
 | FastAPI / Starlette | `await request.body()` |
 | `http.server` | `self.rfile.read(int(self.headers["Content-Length"]))` |
 
-将 Webhook 切换到 v3：先部署本 SDK；对 `WrongPayloadVersion` 返回 2xx 并保留其原始 JSON；
-然后在控制台将 Webhook 切换为 `payloadVersion` 3；再等待约 2 小时，因为切换前排队的重试仍会以旧格式到达。
-
 ## 错误与重试
 
-所有错误都继承自 `FinlightError`，并带有一个 `kind` 字符串。
+所有错误都继承自 `FinlightError`，并带有 `kind`：`api`、`validation`、`network`、`timeout`、`decode`、
+`webhook_verification` 或 `preempted`。
 
 | 错误 | 场景 |
 |---|---|
-| `FinlightApiError` | API 返回了错误。包含 `status`、`code`、`title`、`detail`、`request_id`、`errors`、`raw`、`docs_url`。每个 code 有对应子类：`ValidationFailedError`、`CursorInvalidError`、`CursorMismatchError`、`UnauthorizedError`、`ForbiddenError`、`NotFoundError`、`RateLimitedError`、`InternalServerError`。未知 code 使用基类。 |
-| `RateLimitedError` | `limit_type` 为 `monthly`、`burst` 或更新的取值；`retry_after` 以秒为单位。 |
-| `FinlightValidationError` | 请求在本地被拒绝（属于 `ValueError`）。 |
+| `FinlightApiError` | API 返回了错误：REST、被拒绝的流连接或流错误。包含 `status`、`code`、`type`、`title`、`detail`、`request_id`、`errors`（`FieldIssue`）、`api_kind`、`raw`。子类：`ValidationFailedError`、`CursorInvalidError`、`CursorMismatchError`、`UnauthorizedError`、`ForbiddenError`、`NotFoundError`、`RateLimitedError`、`InternalServerError`。其他情况的 `api_kind` 为 `other`。 |
+| `RateLimitedError` | `limit_type` 为 `monthly`、`burst`、`unknown` 或更新的取值；`retry_after` 以秒为单位。 |
+| `FinlightValidationError` | 请求在本地被拒绝（也是 `ValueError`）；`param` 指出对应的键。 |
 | `FinlightNetworkError`、`FinlightTimeoutError` | 网络故障或超时。原始错误位于 `__cause__`。 |
-| `FinlightDecodeError` | 单个响应无法读取。 |
+| `FinlightDecodeError` | 响应无法读取（`path`、`raw`）。 |
 | `WebhookVerificationError` | Webhook 验证失败（`reason`）。 |
 | `PreemptedError` | 流被其他连接接管（`reason`、`new_lease_id`）。设置 `quota_reconnect=False` 时，配额用尽也会抛出。 |
 
 重试：5xx 响应、网络错误和超时最多重试 3 次，等待时间逐次增加，搜索请求也不例外。
 400、401、403、404 以及按月配额的 429 永不重试：按月配额的 429 会立即报错，`search_all` 中也是如此；
-只有流会等待配额恢复（见上文）。突发（burst）429 会等待 `Retry-After` 秒
-（没有该请求头时为 10 秒）后再试一次；设置 `retry_on_burst="off"` 可关闭。每次调用都发送自己的
-`X-Request-Id`，重试时保持不变。按 Ctrl+C 可中止调用；等待会立即结束，且不会重试。
+只有流会等待配额恢复（见上文）。突发（burst）429 会精确等待 `Retry-After` 秒（没有该请求头时为 10 秒）
+后再试一次；默认开启，不计入 `max_retries`，设置 `retry_on_burst="off"` 可关闭。每次调用都发送自己的
+`X-Request-Id`，重试时保持不变。按 Ctrl+C 会立即中止 REST 调用且不重试；取消任务即可停止流。
 
 ## 配置
 
@@ -219,21 +241,54 @@ client = FinlightClient(
     base_url="https://api.finlight.me",   # a trailing slash is fine
     wss_url="wss://wss.finlight.me",      # raw streams use <wss_url>/raw
     timeout=30.0,                         # seconds per attempt
-    total_timeout=None,                   # optional cap per call, retries included
-    max_retries=3,
-    retry_on_burst="once",                # or "off"
-    max_pages=10,
-    ping_interval=25.0, pong_timeout=60.0, rotation_interval=6900.0,
-    takeover=False,
-    quota_reconnect=True, quota_reconnect_interval=3600.0,
-    session=None,                         # your own requests.Session
 )
 ```
 
-所有时间单位均为秒。也可以构造 `FinlightConfig` 并通过 `config=` 传入。使用自己的 `requests.Session`
-时，其超时、代理和适配器生效；请不要添加重试适配器，因为每次尝试都会消耗配额。SDK 永远不会关闭
-不是它创建的 session。`websocket_options` 会传给 `websockets.connect`。SDK 通过 `finlight_client`
-日志记录器输出日志，默认不输出。
+所有键都可以作为关键字参数或通过 `FinlightConfig`（`config=`）设置。时间单位均为秒。
+
+| 键 | 默认值 | 含义 |
+|---|---|---|
+| `api_key` | 必填 | API 密钥，不能为空 |
+| `base_url` | `https://api.finlight.me` | REST 基础 URL |
+| `wss_url` | `wss://wss.finlight.me` | WebSocket URL，raw 位于 `/raw` |
+| `timeout` | 30 | 每次 REST 尝试 |
+| `total_timeout` | 无 | 每次调用的上限，含重试和 burst 等待 |
+| `max_retries` | 3 | 5xx、网络错误和超时的重试次数 |
+| `retry_base_delay`、`retry_max_delay` | 0.5、8 | 重试之间逐渐增加的等待 |
+| `retry_on_burst` | `"once"` | `"off"` 关闭 burst 重试 |
+| `burst_wait` | 10 | 缺少 `Retry-After` 时的 burst 等待 |
+| `max_pages` | 10 | `search_all` 的页数上限 |
+| `max_response_bytes` | 32 MiB | REST 响应的大小上限 |
+| `company_cache_size` | 256 | `companies.get` 保留的记录数，0 表示关闭 |
+| `ping_interval` | 25 | 流的 ping 间隔 |
+| `watchdog_timeout` | 60 | 超过该时间未收到 pong 即重连 |
+| `rotation_interval` | 6900（115 分钟） | 在 2 小时上限前建立新连接 |
+| `reconnect_base_delay`、`reconnect_max_delay` | 1、30 | 重连之间逐渐增加的等待 |
+| `long_backoff` | 60 | 因连接数上限或 429 被拒后的等待 |
+| `quota_reconnect` | `True` | 等待每月 WebSocket 配额而不是结束 |
+| `quota_reconnect_interval` | 3600 | 配额重试之间的等待 |
+| `search_failed_threshold` | 5 | 连续多少次 `SEARCH_FAILED` 后调用 `on_error` |
+| `dedupe_cache_size` | 1000 | 每个流记住的推送数 |
+| `max_message_bytes` | 32 MiB | 流消息的大小上限 |
+| `connect_timeout` | 30 | WebSocket 握手 |
+| `session` | 无 | 你自己的 `requests.Session` |
+| `websocket_options`、`websocket_connect` | 无 | `websockets.connect` 的选项，或你自己的 WebSocket 传输 |
+| `clock` | 系统时钟 | 流计时器的时间来源（用于测试） |
+
+使用自己的 `requests.Session` 时，其超时、代理和适配器生效；请不要添加重试适配器，因为每次尝试都会消耗配额。
+SDK 永远不会关闭不是它创建的 session。
+
+## 日志
+
+SDK 通过标准 `logging` 模块以 `finlight_client` 名称记录日志。未做设置时不输出任何内容。警告涉及被跳过的条目、
+重连和配额等待。API 密钥、Webhook 密钥、签名和完整的请求体绝不会出现在日志或错误信息中，`websockets` 库的
+调试输出（会显示请求头）也被屏蔽。SDK 不会修改全局日志设置，也不会安装信号处理器。
+
+```python
+import logging
+
+logging.getLogger("finlight_client").setLevel(logging.INFO)
+```
 
 ## 数据说明
 
@@ -263,6 +318,13 @@ client = FinlightClient(
 | Webhook `isUpdate` | `event.event == "article.updated"` |
 | Webhook 请求体 | `event.data`，以及用于去重的 `event.event_id` |
 
+将 Webhook 切换到 v3 的四个步骤：
+
+1. 部署本 SDK。
+2. 对 `WrongPayloadVersion` 返回 2xx 并保留其 `raw` JSON。
+3. 在控制台将 Webhook 切换为 `payloadVersion` 3。
+4. 等待约 2 小时：切换前排队的重试仍会以旧格式到达。
+
 不要在同一个密钥上同时运行 2.x 和 3.x 的流：它们共用连接数上限。
 
 ## 开发
@@ -274,8 +336,8 @@ python scripts/sync_conformance.py --from <monorepo>/shared/contracts/api-v3
 python scripts/check_conformance.py
 ```
 
-`CONFORMANCE.md` 列出了契约套件中每个用例对应的测试。在线测试只针对 dev 环境运行，需要
-`FINLIGHT_API_KEY`、`FINLIGHT_BASE_URL` 和 `FINLIGHT_WSS_URL`：
+`conformance/` 是契约套件的副本，附带 `CONTRACT_VERSION` 和 sha256 `MANIFEST`；`CONFORMANCE.md` 列出每个用例
+对应的测试。在线测试只针对 dev 环境运行，需要 `FINLIGHT_API_KEY`、`FINLIGHT_BASE_URL` 和 `FINLIGHT_WSS_URL`：
 `pytest tests/live -m live --force-enable-socket`。
 
 ## 许可证

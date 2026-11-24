@@ -19,10 +19,10 @@
   },
   "expect": {
     "signatureValid": true,
-    "outcome": "error",
-    "error": "PayloadVersionMismatch",
-    "message": "wrong payload version: expected 3",
-    "receivedPayloadVersion": null,
+    "outcome": "wrongPayloadVersion",
+    "result": "WrongPayloadVersion",
+    "detectedVersion": 2,
+    "payloadVersionPresent": false,
     "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors"
   }
 }

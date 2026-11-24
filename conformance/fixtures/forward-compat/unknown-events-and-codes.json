@@ -81,7 +81,7 @@
         "requestId": "req_synthetic",
         "limitType": "daily"
       },
-      "expect": "RateLimited error with limitType \"daily\" kept as a string; not retried (retry class never)"
+      "expect": "RateLimitedError (apiKind rate_limited) with limitType \"daily\" kept as a string; not retried (retry class never)"
     }
   ]
 }

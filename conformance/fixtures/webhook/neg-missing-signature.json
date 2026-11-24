@@ -19,7 +19,7 @@
   "expect": {
     "signatureValid": false,
     "outcome": "error",
-    "error": "WebhookSignatureError",
-    "reason": "missing signature"
+    "error": "WebhookVerificationError",
+    "reason": "missing_signature"
   }
 }

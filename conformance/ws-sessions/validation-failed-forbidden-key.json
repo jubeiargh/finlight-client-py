@@ -67,7 +67,8 @@
     {
       "step": "expect",
       "outcome": "terminalError",
-      "error": "ValidationError",
+      "error": "FinlightApiError",
+      "apiKind": "validation_failed",
       "code": "VALIDATION_FAILED"
     },
     {

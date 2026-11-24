@@ -10,7 +10,7 @@ from urllib.parse import parse_qsl
 
 import pytest
 
-from finlight_client import CompanyRecord, FinlightClient
+from finlight_client import CompanyRecord, FinlightClient, cache_info
 from tests.support import KIT, fixtures, load, snake_args
 
 HTTP_CASES = [(cid, p) for cid, p in fixtures("fixtures/requests") if p.name not in (
@@ -101,7 +101,10 @@ def test_request(case: str, path: Path, httpserver: Any, make_client: Any) -> No
             assert private.primary_listing is None and private.listings == [] and private.isins == []
     elif case == "R-08":
         assert isinstance(result, CompanyRecord)
-        assert result.etag == fx["response"]["headers"]["etag"]
+        info = cache_info(result)
+        assert info is not None and not info.not_modified
+        assert info.etag == fx["response"]["headers"]["etag"]
+        assert info.cache_control == fx["response"]["headers"]["cache-control"]
         mics = [listing.mic for listing in result.listings]
         assert len(mics) == len(set(mics))
         assert result.listings[0].mic == result.primary_listing.mic
@@ -138,7 +141,7 @@ def test_r09_client_cache_serves_record_on_304(httpserver: Any, make_client: Any
     serve(httpserver, nm)
     second = client.companies.get(900001)
     assert httpserver.log[0][0].headers.get("If-None-Match") == ok["response"]["headers"]["etag"]
-    assert second is first
+    assert second is first and cache_info(second).not_modified
 
 
 def test_kit_files_present() -> None:

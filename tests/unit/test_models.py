@@ -91,3 +91,12 @@ def test_keys_match_exactly() -> None:
 
 def test_model_is_the_public_article_type() -> None:
     assert isinstance(decode_article(FULL), Article)
+
+
+def test_decode_error_names_the_path() -> None:
+    wire = copy.deepcopy(FULL)
+    wire["companies"][1]["companyId"] = "900002"
+    with pytest.raises(FinlightDecodeError) as info:
+        decode_article(wire)
+    assert info.value.path == "companies[1].companyId" and info.value.raw == "900002"
+    assert raw_json(info.value) == "900002"

@@ -37,6 +37,7 @@
   },
   "expect": {
     "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
     "retry": "never"
   }
 }

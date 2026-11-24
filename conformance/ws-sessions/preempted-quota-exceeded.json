@@ -2,6 +2,9 @@
   "id": "S-10",
   "title": "connection.preempted, reason quota_exceeded",
   "endpoint": "enriched",
+  "clientConfig": {
+    "quotaReconnect": true
+  },
   "steps": [
     {
       "step": "dial",
@@ -61,14 +64,31 @@
     },
     {
       "step": "expect",
-      "outcome": "terminalError",
+      "outcome": "reported",
+      "hook": "onQuotaWait",
       "error": "PreemptedError",
       "reason": "quota_exceeded",
-      "newLeaseId": null
+      "newLeaseId": null,
+      "attempt": 1
+    },
+    {
+      "step": "advance",
+      "ms": 3599000
     },
     {
       "step": "expect",
-      "outcome": "noReconnect"
+      "outcome": "noReconnect",
+      "note": "less than one hour after the preempt"
+    },
+    {
+      "step": "advance",
+      "ms": 1000
+    },
+    {
+      "step": "expect",
+      "outcome": "reconnect",
+      "reason": "quota_exceeded",
+      "resubscribe": true
     }
   ]
 }

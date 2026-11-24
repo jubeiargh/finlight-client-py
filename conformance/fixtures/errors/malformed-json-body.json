@@ -23,6 +23,7 @@
   },
   "expect": {
     "code": "NESTJS_FALLBACK",
+    "apiKind": "validation_failed",
     "retry": "never"
   }
 }

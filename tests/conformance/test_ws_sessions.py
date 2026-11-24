@@ -17,15 +17,35 @@ from typing import Any, Optional
 import pytest
 
 from finlight_client import (
+    AdmittedInfo,
+    CursorInvalidError,
+    CursorMismatchError,
     FinlightApiError,
     FinlightClient,
     ForbiddenError,
+    InternalServerError,
+    NotFoundError,
     PreemptedError,
+    QuotaWaitInfo,
+    RateLimitedError,
+    ReconnectInfo,
     StreamEvent,
     UnauthorizedError,
     ValidationFailedError,
 )
 from tests.support import KIT_KEY, FakeClock, ServerConn, WsServer, fixtures, load, settle, snake
+
+API_KIND_CLASSES = {
+    "validation_failed": ValidationFailedError,
+    "cursor_invalid": CursorInvalidError,
+    "cursor_mismatch": CursorMismatchError,
+    "unauthorized": UnauthorizedError,
+    "forbidden": ForbiddenError,
+    "not_found": NotFoundError,
+    "rate_limited": RateLimitedError,
+    "internal_error": InternalServerError,
+    "other": FinlightApiError,
+}
 
 SESSIONS = fixtures("ws-sessions")
 FORBIDDEN = {"includeContent", "includeEntities", "extended"}
@@ -34,10 +54,6 @@ ENRICHED_KEYS = {
     "countries", "categories", "excludeEmptyContent", "includeUpdates",
 }
 RAW_KEYS = {"query", "sources", "excludeSources", "language", "includeUpdates"}
-# Kit rc.2 still expects these to be terminal. Owner decision 2026-11-24 (kit rc.3): an exhausted
-# monthly WebSocket quota reconnects every hour by default. With quota_reconnect=False the old
-# terminal expectation still holds, and both are tested.
-QUOTA_CASES = {"S-10", "S-24"}
 DEFAULT_FRAME = {"payloadVersion": 3, "query": "ticker:XMPL", "clientNonce": "c-kit-1"}
 
 
@@ -54,20 +70,20 @@ def sdk_frame(frame: dict[str, Any], raw: bool) -> dict[str, Any]:
 
 
 class Session:
-    def __init__(self, fx: dict[str, Any], server: WsServer, clock: FakeClock, *, quota_reconnect: bool = True) -> None:
+    def __init__(self, fx: dict[str, Any], server: WsServer, clock: FakeClock) -> None:
         self.fx = fx
-        self.quota_reconnect = quota_reconnect
+        # clientConfig uses base words; the Python names are snake_case.
+        self.client_config = {snake(k): v for k, v in fx.get("clientConfig", {}).items()}
         self.server = server
         self.clock = clock
         self.raw = fx.get("endpoint") == "raw"
         self.steps: list[dict[str, Any]] = fx["steps"]
-        if quota_reconnect and fx["id"] in QUOTA_CASES:
-            self.steps = self._quota_steps(self.steps)
         self.items: asyncio.Queue[StreamEvent] = asyncio.Queue()
         self.admitted: list[tuple[Any, ...]] = []
         self.admitted_seen = 0
         self.errors: list[BaseException] = []
-        self.reconnects: list[tuple[Any, ...]] = []
+        self.reconnects: list[Any] = []
+        self.quota_waits: list[Any] = []
         self.terminal: Optional[BaseException] = None
         self.done = asyncio.Event()
         self.conn: Optional[ServerConn] = None
@@ -78,19 +94,6 @@ class Session:
         first = next((s["frame"] for s in self.steps if s["step"] == "clientSends" and is_subscribe(s.get("frame"))), None)
         self.first_frame: dict[str, Any] = first or DEFAULT_FRAME
         server.auto_pong = not any(s["step"] == "clientSends" and "match" in s for s in self.steps)
-
-    @staticmethod
-    def _quota_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Replace the rc.2 terminal expectation with the hourly quota reconnect."""
-        out: list[dict[str, Any]] = []
-        for step in steps:
-            if step.get("outcome") == "terminalError":
-                out.append(dict(step, outcome="quotaReconnect"))
-            elif step.get("outcome") == "noReconnect":
-                continue
-            else:
-                out.append(step)
-        return out
 
     def api_key(self) -> str:
         dial = next(s for s in self.steps if s["step"] == "dial")
@@ -107,14 +110,15 @@ class Session:
             clock=self.clock,
             random=lambda: 0.0,
             nonce_factory=lambda: nonce,
-            quota_reconnect=self.quota_reconnect,
+            **self.client_config,
         )
         factory = client.raw_stream if self.raw else client.stream
         self.stream = factory(
             **args,
-            on_admitted=lambda *a: self.admitted.append(a),
+            on_admitted=self.admitted.append,
             on_error=self.errors.append,
-            on_reconnect=lambda *a: self.reconnects.append(a),
+            on_reconnect=self.reconnects.append,
+            on_quota_wait=self.quota_waits.append,
         )
         self.task = asyncio.ensure_future(self._consume())
 
@@ -223,13 +227,13 @@ class Session:
 
     async def expect_admitted(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:
         await self.wait_for(lambda: len(self.admitted) > self.admitted_seen, "connection.admitted")
-        lease_id, server_now, nonce = self.admitted[self.admitted_seen]
+        info = self.admitted[self.admitted_seen]
         self.admitted_seen += 1
-        assert isinstance(server_now, int)
+        assert isinstance(info, AdmittedInfo) and isinstance(info.server_now, int)
         if "clientNonce" in step:
-            assert nonce == step["clientNonce"]
+            assert info.client_nonce == step["clientNonce"]
         if "leaseId" in step:
-            assert lease_id == step["leaseId"]
+            assert info.lease_id == step["leaseId"]
 
     async def expect_noAdmitted(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
         await settle(0.05)
@@ -269,55 +273,43 @@ class Session:
         )
         assert self.terminal is None
 
-    async def expect_terminalError(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
-        await asyncio.wait_for(self.done.wait(), 5)
-        err = self.terminal
-        kind = step["error"]
-        if kind == "DialError":
-            assert isinstance(err, FinlightApiError) and err.status == step["status"]
-            if step["status"] == 401:
-                assert isinstance(err, UnauthorizedError)
-            if step["status"] == 403:
-                assert isinstance(err, ForbiddenError)
+    def check_error(self, err: Any, spec: dict[str, Any]) -> None:
+        kind = spec["error"]
+        if kind == "FinlightApiError":
+            assert isinstance(err, FinlightApiError)
+            assert err.api_kind == spec["apiKind"]
+            assert isinstance(err, API_KIND_CLASSES[spec["apiKind"]])
+            if "status" in spec:
+                assert err.status == spec["status"]
+            if "code" in spec:
+                assert err.code == spec["code"]
+            if spec["apiKind"] == "validation_failed" and err.code == "VALIDATION_FAILED":
+                assert err.errors and err.errors[0].field and err.errors[0].constraints
         elif kind == "PreemptedError":
             assert isinstance(err, PreemptedError)
-            assert err.reason == step["reason"] and err.new_lease_id == step["newLeaseId"]
-        elif kind == "ValidationError":
-            assert isinstance(err, ValidationFailedError) and err.code == step["code"]
-            assert err.errors and err.errors[0].field and err.errors[0].issue
+            assert err.reason == spec["reason"] and err.new_lease_id == spec["newLeaseId"]
         else:
             raise AssertionError(kind)
 
-    async def expect_quotaReconnect(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
-        """Quota exhausted: not terminal; reported, then one new dial per hour, each one reported."""
-        def quota_errors() -> list[BaseException]:
-            return [e for e in self.errors
-                    if (isinstance(e, PreemptedError) and e.reason == "quota_exceeded")
-                    or (isinstance(e, ForbiddenError) and (e.detail or "").startswith("WebSocket quota exceeded"))]
+    async def expect_terminalError(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
+        await asyncio.wait_for(self.done.wait(), 5)
+        self.check_error(self.terminal, step)
 
-        await self.wait_for(lambda: len(quota_errors()) == 1, "the quota report")
+    async def expect_reported(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:
+        """Passed to the named hook; the stream keeps running."""
+        await self.check_reported(step)
+
+    async def check_reported(self, spec: dict[str, Any]) -> None:
+        hook = spec["hook"]
+        assert hook == "onQuotaWait", hook
+        attempt = spec.get("attempt", 1)
+        await self.wait_for(lambda: len(self.quota_waits) >= attempt, "the onQuotaWait report")
+        info = self.quota_waits[attempt - 1]
+        assert isinstance(info, QuotaWaitInfo) and info.attempt == attempt
+        assert info.next_attempt_in == self.stream._config.quota_reconnect_interval
+        self.check_error(info.error, spec)
+        assert not any(e is info.error for e in self.errors), "quota waits go to on_quota_wait only"
         assert self.terminal is None and not self.done.is_set()
-        if step["error"] == "PreemptedError":
-            err = quota_errors()[0]
-            assert err.reason == step["reason"] and err.new_lease_id == step["newLeaseId"]
-        dial = self.server.dials[-1]["headers"]
-        refusal = (403, '{"message":"WebSocket quota exceeded for the current period"}')
-        for attempt in (2, 3):
-            self.server.reject_plan.append(refusal)  # the quota is still exhausted
-            before = len(self.server.dials)
-            # The wait counts from the previous attempt; leave a margin for the fake-clock step.
-            await self.clock.advance(3598)
-            assert len(self.server.dials) == before, "retried before the hour was over"
-            await self.clock.advance(3)
-            await self.wait_for(lambda b=before: len(self.server.dials) > b, "the hourly dial")
-            await self.wait_for(lambda n=attempt: len(quota_errors()) == n, "the next quota report")
-            assert self.terminal is None and not self.done.is_set()
-        assert dict(self.server.dials[-1]["headers"])["x-api-key"] == dict(dial)["x-api-key"]
-        before = len(self.server.dials)
-        await self.clock.advance(3600)  # quota is back: the dial is accepted and subscribes again
-        await self.wait_for(lambda: len(self.server.dials) > before, "the dial after the quota came back")
-        conn = await self.server.next_connection()
-        assert await conn.recv() == sdk_frame(self.first_frame, self.raw)
 
     async def expect_noReconnect(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
         dials = len(self.server.dials)
@@ -332,9 +324,11 @@ class Session:
         assert self.terminal is None
         if rest and rest[0]["step"] == "dial":
             return  # the next dial step waits for the new connection
-        before = len(self.server.dials)
-        if step.get("backoff") == "long":
-            # Long backoff: the first retry comes after at least 60 s (fixture value if given).
+        if "reported" in step:
+            await self.check_reported(step["reported"])
+        before = self.dials_consumed  # the dial may already have happened while time advanced
+        if step.get("backoff") in ("long", "quota"):
+            # Long backoff (60 s) or the quota interval (1 h): never sooner than the fixture minimum.
             minimum = step.get("firstRetryMinMs", 60000) / 1000
             await self.clock.advance(minimum - 0.001)
             assert len(self.server.dials) == before, "retried before the minimum wait"
@@ -342,6 +336,9 @@ class Session:
         self.dials_consumed = len(self.server.dials)
         if step.get("hint") == "takeover":
             assert any("takeover" in str(e) for e in self.errors)
+        if "reason" in step:
+            await self.wait_for(lambda: bool(self.reconnects), "on_reconnect")
+            assert self.reconnects[-1].reason == step["reason"]
         if step.get("resubscribe"):
             self.conn = await self.server.next_connection()
             got = await self.conn.recv()
@@ -373,18 +370,6 @@ class Session:
         assert self.terminal is None
 
 
-@pytest.mark.parametrize("case", sorted(QUOTA_CASES))
-async def test_quota_terminal_when_switched_off(case: str, ws_server: WsServer, fake_clock: FakeClock) -> None:
-    """The rc.2 expectation (terminal, no reconnect) with quota_reconnect=False."""
-    path = dict(SESSIONS)[case]
-    session = Session(load(f"ws-sessions/{path.name}"), ws_server, fake_clock, quota_reconnect=False)
-    try:
-        await asyncio.wait_for(session.run(), 60)
-    finally:
-        await session.close()
-    assert session.terminal is not None
-
-
 @pytest.mark.parametrize(("case", "path"), SESSIONS, ids=[c for c, _ in SESSIONS])
 async def test_session(case: str, path: Path, ws_server: WsServer, fake_clock: FakeClock) -> None:
     fx = load(f"ws-sessions/{path.name}")
@@ -394,7 +379,8 @@ async def test_session(case: str, path: Path, ws_server: WsServer, fake_clock: F
     finally:
         await session.close()
     if case == "S-18":
-        assert session.reconnects and session.reconnects[-1][1] == "rotation"
+        assert session.reconnects and session.reconnects[-1].reason == "rotation"
+        assert isinstance(session.reconnects[-1], ReconnectInfo) and session.reconnects[-1].connection == 2
         old, new = ws_server.all[0], ws_server.all[1]
         await asyncio.wait_for(old.closed.wait(), 5)  # the old connection is closed after the new one subscribed
         assert new is not old
@@ -408,7 +394,7 @@ async def run_subscribe_fixture(name: str, server: WsServer, clock: FakeClock, r
     admitted: list[Any] = []
     errors: list[Any] = []
     stream = (client.raw_stream if raw else client.stream)(
-        **args, on_admitted=lambda *a: admitted.append(a), on_error=errors.append
+        **args, on_admitted=admitted.append, on_error=errors.append
     )
     items: list[StreamEvent] = []
 
@@ -427,7 +413,7 @@ async def run_subscribe_fixture(name: str, server: WsServer, clock: FakeClock, r
         for frame in fx["server"]["frames"]:
             await conn.send(frame)
         await settle(0.05)
-        assert len(admitted) == 1 and admitted[0][2] == nonce
+        assert len(admitted) == 1 and admitted[0].client_nonce == nonce
         assert errors == []
         if raw:
             assert items == []

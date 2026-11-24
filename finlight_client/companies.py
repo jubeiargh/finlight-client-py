@@ -10,7 +10,7 @@ from typing import Any, Optional, overload
 from ._http import HttpTransport
 from ._params import company_ids
 from .errors import FinlightDecodeError, FinlightValidationError
-from .models import CompanyRecord, decode_company_record, decode_list
+from .models import CacheInfo, CompanyRecord, cache_info, decode_company_record, decode_list
 
 __all__ = ["CompaniesService", "CompanyList"]
 
@@ -24,12 +24,14 @@ class CompanyList(list):  # type: ignore[type-arg]
 
 
 class _EtagCache:
-    def __init__(self, size: int = 1000) -> None:
+    def __init__(self, size: int) -> None:
         self._size = size
         self._items: OrderedDict[int, CompanyRecord] = OrderedDict()
         self._lock = threading.Lock()
 
     def get(self, key: int) -> Optional[CompanyRecord]:
+        if self._size <= 0:
+            return None
         with self._lock:
             item = self._items.get(key)
             if item is not None:
@@ -37,6 +39,8 @@ class _EtagCache:
             return item
 
     def put(self, key: int, record: CompanyRecord) -> None:
+        if self._size <= 0:
+            return
         with self._lock:
             self._items[key] = record
             self._items.move_to_end(key)
@@ -45,22 +49,22 @@ class _EtagCache:
 
 
 class CompaniesService:
-    def __init__(self, http: HttpTransport) -> None:
+    def __init__(self, http: HttpTransport, cache_size: int = 256) -> None:
         self._http = http
-        self._cache = _EtagCache()
+        self._cache = _EtagCache(cache_size)
 
     def search(self, q: str, *, mic: Optional[str] = None) -> CompanyList:
         """Resolve a ticker, name, ISIN or vendor notation (at most 10 results, no pages)."""
         if not isinstance(q, str):
-            raise FinlightValidationError("q must be a string")
+            raise FinlightValidationError("q must be a string", param="q")
         if len(q) > 200:
-            raise FinlightValidationError("q takes at most 200 characters")
+            raise FinlightValidationError("q takes at most 200 characters", param="q")
         query = [("q", q)]
         if mic is not None:
             if not isinstance(mic, str):
-                raise FinlightValidationError("mic must be a string")
+                raise FinlightValidationError("mic must be a string", param="mic")
             if len(mic) > 32:
-                raise FinlightValidationError("mic takes at most 32 characters")
+                raise FinlightValidationError("mic takes at most 32 characters", param="mic")
             query.append(("mic", mic))
         resp = self._http.call("GET", "/v3/companies", query=query)
         return _company_list(resp.json())
@@ -80,34 +84,46 @@ class CompaniesService:
     def get(self, company_id: int, *, if_none_match: Optional[str] = None) -> Optional[CompanyRecord]:
         """``GET /v3/companies/{companyId}``. A miss raises ``NotFoundError``.
 
-        Without ``if_none_match`` the client keeps the last record per id and
-        revalidates it with its ``ETag``; a 304 answer returns the kept record.
-        With ``if_none_match`` you manage the cache: a 304 answer returns ``None``
-        ("not modified"). The ETag of a record is ``record.etag``.
+        Without ``if_none_match`` the client keeps the last records (``company_cache_size``,
+        default 256, 0 turns it off) and revalidates them with their ``ETag``; a 304 answer
+        returns the kept record. With ``if_none_match`` you manage the cache: a 304 answer
+        returns ``None`` ("not modified"). ``cache_info(record)`` gives the ETag and
+        Cache-Control of a record.
         """
         if isinstance(company_id, bool) or not isinstance(company_id, int):
-            raise FinlightValidationError("company_id must be an integer")
+            raise FinlightValidationError("company_id must be an integer", param="company_id")
         cached = None
         headers = {}
         if if_none_match is not None:
             if not isinstance(if_none_match, str):
-                raise FinlightValidationError("if_none_match must be a string")
+                raise FinlightValidationError("if_none_match must be a string", param="if_none_match")
             headers["If-None-Match"] = if_none_match
         else:
             cached = self._cache.get(company_id)
-            if cached is not None and cached.etag:
-                headers["If-None-Match"] = cached.etag
+            info = cache_info(cached) if cached is not None else None
+            if info is not None and info.etag:
+                headers["If-None-Match"] = info.etag
         resp = self._http.call(
             "GET", f"/v3/companies/{company_id}", headers=headers, ok_statuses=(200, 304)
         )
         if resp.status == 304:
+            if cached is None:
+                return None
+            old = cache_info(cached)
+            cached._cache_info = CacheInfo(
+                etag=resp.headers.get("etag") or (old.etag if old else None),
+                cache_control=resp.headers.get("cache-control") or (old.cache_control if old else None),
+                not_modified=True,
+            )
             return cached
         body = resp.json()
         if not isinstance(body, dict) or "company" not in body:
             raise FinlightDecodeError("response has no 'company' object", raw=body)
         record = decode_company_record(body["company"])
-        record._etag = resp.headers.get("etag")
-        if record.etag:
+        record._cache_info = CacheInfo(
+            etag=resp.headers.get("etag"), cache_control=resp.headers.get("cache-control"), not_modified=False
+        )
+        if record._cache_info.etag:
             self._cache.put(company_id, record)
         return record
 

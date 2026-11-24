@@ -4,26 +4,28 @@ from __future__ import annotations
 
 from _env import client_options
 
-from finlight_client import FinlightClient
+from finlight_client import FinlightApiError, FinlightClient
 
 
 def main() -> None:
     with FinlightClient(**client_options()) as client:
-        page = client.articles.search(
-            query="ticker:NVDA",
-            languages=["en"],
-            include=["companies", "events"],
-            limit=10,
-        )
+        try:
+            page = client.articles.search(
+                query="ticker:NVDA",
+                languages=["en"],
+                include=["companies", "events"],
+                limit=10,
+            )
+        except FinlightApiError as error:
+            print("API error:", error.status, error.code, error.request_id)
+            return
         for article in page.articles:
-            # published_at is the string as sent; published_at_time parses it (None if unreadable).
-            print(article.published_at, article.source.domain, article.title)
-            if article.sentiment_present and article.sentiment is not None:
-                print("  sentiment:", article.sentiment.label, article.sentiment.confidence)
+            # published_at_time parses the timestamp strictly (None if unreadable).
+            print(article.published_at_time, article.source.domain, article.title)
             if article.companies_present:
                 tickers = [c.primary_listing.ticker for c in article.companies or [] if c.primary_listing]
                 print("  companies:", tickers)
-        print("more pages:", page.has_more)
+        print("has more:", page.pagination.has_more)
 
 
 if __name__ == "__main__":

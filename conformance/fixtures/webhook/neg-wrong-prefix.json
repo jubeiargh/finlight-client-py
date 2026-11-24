@@ -20,7 +20,7 @@
   "expect": {
     "signatureValid": false,
     "outcome": "error",
-    "error": "WebhookSignatureError",
-    "reason": "unsupported signature scheme"
+    "error": "WebhookVerificationError",
+    "reason": "unsupported_signature_scheme"
   }
 }

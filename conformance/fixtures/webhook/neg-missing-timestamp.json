@@ -19,7 +19,7 @@
   "expect": {
     "signatureValid": false,
     "outcome": "error",
-    "error": "WebhookSignatureError",
-    "reason": "missing timestamp"
+    "error": "WebhookVerificationError",
+    "reason": "missing_timestamp"
   }
 }

@@ -1,0 +1,81 @@
+{
+  "id": "S-27",
+  "title": "connection.preempted, reason quota_exceeded, with quotaReconnect turned off",
+  "endpoint": "enriched",
+  "clientConfig": {
+    "quotaReconnect": false
+  },
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1"
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "admitted"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.preempted",
+        "payloadVersion": 3,
+        "data": {
+          "reason": "quota_exceeded",
+          "newLeaseId": null,
+          "timestamp": 1795467845123
+        }
+      }
+    },
+    {
+      "step": "serverCloses",
+      "note": "the server drops the connection (API Gateway DeleteConnection)"
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "PreemptedError",
+      "reason": "quota_exceeded",
+      "newLeaseId": null
+    },
+    {
+      "step": "advance",
+      "ms": 7200000
+    },
+    {
+      "step": "expect",
+      "outcome": "noReconnect"
+    }
+  ]
+}

@@ -64,5 +64,5 @@ def test_legacy_keys_cannot_be_smuggled_into_a_subscribe() -> None:
 
 def test_subscribe_with_only_query() -> None:
     stream = FinlightClient(api_key="k").stream(query="ticker:XMPL")
-    assert stream.subscribe_frame == {"payloadVersion": 3, "query": "ticker:XMPL"}
-    assert type(stream.subscribe_frame["payloadVersion"]) is int
+    assert stream._frame == {"payloadVersion": 3, "query": "ticker:XMPL"}
+    assert type(stream._frame["payloadVersion"]) is int

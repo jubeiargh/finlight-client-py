@@ -135,3 +135,18 @@ def test_get_by_link_encodes_once(httpserver: Any, make_client: Any) -> None:
     assert request.args.get("link") == link
     assert request.args.get("include") == "content,events"
     assert "include[]" not in request.query_string.decode()
+
+
+def test_validation_errors_name_the_param(offline: FinlightClient) -> None:
+    cases = [
+        (lambda: offline.articles.search(limit=0), "limit"),
+        (lambda: offline.articles.search(from_=datetime(2026, 1, 1)), "from_"),
+        (lambda: offline.articles.get("id", include=["a", "b", "c", "d"]), "include"),
+        (lambda: offline.companies.get_many([]), "ids"),
+        (lambda: offline.companies.search("x" * 201), "q"),
+        (lambda: offline.stream(takeover="yes"), "takeover"),
+    ]
+    for call, param in cases:
+        with pytest.raises(FinlightValidationError) as info:
+            call()
+        assert info.value.param == param

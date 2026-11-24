@@ -30,7 +30,7 @@ from pydantic import BaseModel, ConfigDict, PrivateAttr, ValidationError, field_
 from pydantic.alias_generators import to_camel
 
 from ._timeutil import parse_rfc3339
-from .errors import FinlightDecodeError
+from .errors import FinlightApiError, FinlightDecodeError
 
 __all__ = [
     "Article",
@@ -44,11 +44,13 @@ __all__ = [
     "Source",
     "Pagination",
     "ArticlePage",
-    "SkippedItem",
+    "SkippedEntry",
+    "CacheInfo",
     "StreamEvent",
     "WebhookEvent",
     "WrongPayloadVersion",
     "raw_json",
+    "cache_info",
     "to_wire",
 ]
 
@@ -197,7 +199,7 @@ class CompanyRecord(_WireModel):
     listings: list[Listing] = []
     updated_at: Optional[str] = None
 
-    _etag: Optional[str] = PrivateAttr(default=None)
+    _cache_info: Optional[CacheInfo] = PrivateAttr(default=None)
 
     @field_validator("isins", "listings", mode="before")
     @classmethod
@@ -208,13 +210,6 @@ class CompanyRecord(_WireModel):
     def updated_at_time(self) -> Optional[datetime]:
         return parse_rfc3339(self.updated_at)
 
-    @property
-    def etag(self) -> Optional[str]:
-        """The ``ETag`` of the response this record came from (``companies.get`` only).
-
-        This is not a wire key; it comes from the HTTP header.
-        """
-        return self._etag
 
 
 class Source(_WireModel):
@@ -235,6 +230,8 @@ class Source(_WireModel):
 
 
 class Pagination(_WireModel):
+    """``pagination`` of a search page. The end is ``has_more`` false or ``next_cursor`` ``None``."""
+
     limit: Optional[int] = None
     returned: Optional[int] = None
     has_more: Optional[bool] = None
@@ -242,12 +239,24 @@ class Pagination(_WireModel):
 
 
 @dataclass(frozen=True)
-class SkippedItem:
+class SkippedEntry:
     """An entry of a list response that could not be read. It is left out of the result."""
 
     index: int
     raw: Any
-    error: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class CacheInfo:
+    """HTTP cache data of a record from ``companies.get`` (see :func:`cache_info`).
+
+    ``not_modified`` is True when the server answered 304 and the SDK served its cached copy.
+    """
+
+    etag: Optional[str]
+    cache_control: Optional[str]
+    not_modified: bool = False
 
 
 @dataclass
@@ -256,15 +265,7 @@ class ArticlePage:
 
     articles: list[Article]
     pagination: Pagination
-    skipped: list[SkippedItem] = field(default_factory=list)
-
-    @property
-    def has_more(self) -> bool:
-        return bool(self.pagination.has_more) and self.pagination.next_cursor is not None
-
-    @property
-    def next_cursor(self) -> Optional[str]:
-        return self.pagination.next_cursor
+    skipped: list[SkippedEntry] = field(default_factory=list)
 
 
 @dataclass
@@ -280,7 +281,6 @@ class StreamEvent:
     event: str
     kind: str
     data: Optional[Article]
-    payload_version: Any = None
     _raw: Any = field(default=None, repr=False, compare=False)
 
 
@@ -313,14 +313,14 @@ class WrongPayloadVersion:
     retries that still arrive for about 2 h after switching the webhook to v3)
     and keep ``raw`` if you need the data.
 
-    * ``version``: the version as the server reads it (always 2 here).
+    * ``detected_version``: the version as the server reads it (always 2 here).
     * ``payload_version``: the raw ``payloadVersion`` value as received;
       ``payload_version_present`` is False when the key was missing.
     * ``raw``: the parsed JSON body.
     * ``link``: the article link, when it can be read.
     """
 
-    version: int
+    detected_version: int
     payload_version: Any
     payload_version_present: bool
     raw: Any
@@ -330,11 +330,24 @@ class WrongPayloadVersion:
 def raw_json(obj: Any) -> Any:
     """The raw JSON tree (standard ``dict``/``list`` values) an object was read from.
 
-    Works for ``Article``, ``CompanyRecord``, ``Source``, ``StreamEvent`` and
-    ``WebhookEvent``. Unknown keys sent by the server are readable here.
-    Treat the result as read-only.
+    Works for ``Article``, ``CompanyRecord``, ``Source``, ``StreamEvent``,
+    ``WebhookEvent``, ``WrongPayloadVersion`` and the errors (``FinlightApiError``:
+    the parsed body or ``None``; ``FinlightDecodeError``: the value that did not
+    fit). Unknown keys sent by the server are readable here. Treat the result as
+    read-only.
     """
+    if isinstance(obj, WrongPayloadVersion):
+        return obj.raw
+    if isinstance(obj, FinlightApiError):
+        return obj.raw_json()
+    if isinstance(obj, FinlightDecodeError):
+        return obj.raw
     return getattr(obj, "_raw", None)
+
+
+def cache_info(record: CompanyRecord) -> Optional[CacheInfo]:
+    """ETag and Cache-Control of a record from ``companies.get`` (``None`` for other records)."""
+    return record._cache_info
 
 
 def to_wire(model: BaseModel) -> dict[str, Any]:
@@ -350,13 +363,33 @@ def _short_error(exc: ValidationError) -> str:
     return "; ".join(parts)
 
 
+def _json_path(loc: Any) -> Optional[str]:
+    path = ""
+    for part in loc or ():
+        if isinstance(part, int):
+            path += f"[{part}]"
+        else:
+            path += ("." if path else "") + str(part)
+    return path or None
+
+
+def _decode_error(what: str, exc: ValidationError) -> FinlightDecodeError:
+    errors = exc.errors()
+    first: dict[str, Any] = dict(errors[0]) if errors else {}
+    return FinlightDecodeError(
+        f"{what} could not be read: {_short_error(exc)}",
+        raw=first.get("input"),
+        path=_json_path(first.get("loc")),
+    )
+
+
 def _validate(model: type[_WireModel], value: Any, what: str) -> Any:
     if not isinstance(value, dict):
         raise FinlightDecodeError(f"{what} is not a JSON object", raw=value)
     try:
         obj = model.model_validate(value)
     except ValidationError as exc:
-        raise FinlightDecodeError(f"{what} could not be read: {_short_error(exc)}", raw=value) from None
+        raise _decode_error(what, exc) from None
     obj._raw = value
     return obj
 
@@ -371,17 +404,17 @@ def decode_company_record(value: Any) -> CompanyRecord:
     return result
 
 
-def decode_list(items: Any, model: type[_WireModel], what: str) -> tuple[list[Any], list[SkippedItem]]:
+def decode_list(items: Any, model: type[_WireModel], what: str) -> tuple[list[Any], list[SkippedEntry]]:
     if not isinstance(items, list):
         raise FinlightDecodeError(f"'{what}' is not a JSON array", raw=items)
     good: list[Any] = []
-    skipped: list[SkippedItem] = []
+    skipped: list[SkippedEntry] = []
     for index, item in enumerate(items):
         try:
             good.append(_validate(model, item, what))
         except FinlightDecodeError as exc:
             logger.warning("finlight: skipped unreadable %s at index %d: %s", what, index, exc.message)
-            skipped.append(SkippedItem(index=index, raw=item, error=exc.message))
+            skipped.append(SkippedEntry(index=index, raw=item, reason=exc.message))
     return good, skipped
 
 
@@ -395,9 +428,7 @@ def decode_article_page(body: Any) -> ArticlePage:
     try:
         pagination = Pagination.model_validate(pagination_raw)
     except ValidationError as exc:
-        raise FinlightDecodeError(
-            f"pagination could not be read: {_short_error(exc)}", raw=pagination_raw
-        ) from None
+        raise _decode_error("pagination", exc) from None
     pagination._raw = pagination_raw
     return ArticlePage(articles=articles, pagination=pagination, skipped=skipped)
 

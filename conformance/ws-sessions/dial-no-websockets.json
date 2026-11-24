@@ -18,7 +18,8 @@
     {
       "step": "expect",
       "outcome": "terminalError",
-      "error": "DialError",
+      "error": "FinlightApiError",
+      "apiKind": "forbidden",
       "status": 403
     }
   ]

@@ -20,7 +20,7 @@
   "expect": {
     "signatureValid": true,
     "outcome": "error",
-    "error": "WebhookSignatureError",
-    "reason": "timestamp outside tolerance"
+    "error": "WebhookVerificationError",
+    "reason": "timestamp_outside_tolerance"
   }
 }

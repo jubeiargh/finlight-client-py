@@ -94,9 +94,9 @@ def test_unknown_events_and_codes(case: str, httpserver, make_client, sleeps) ->
         assert err.status == item["status"] and err.code == item["wire"]["code"]
         assert err.request_id == item["wire"]["requestId"] and err.detail == item["wire"]["detail"]
         if kind == "problem.code":
-            assert type(err) is FinlightApiError
+            assert type(err) is FinlightApiError and err.api_kind == "other"
         elif kind == "problem.limitType":
-            assert isinstance(err, RateLimitedError)
+            assert isinstance(err, RateLimitedError) and err.api_kind == "rate_limited"
             assert err.limit_type == item["wire"]["limitType"]
         else:
             raise AssertionError(kind)

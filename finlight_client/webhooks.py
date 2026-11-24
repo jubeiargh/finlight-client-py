@@ -14,14 +14,15 @@ from datetime import datetime, timezone
 from typing import Any, Optional, Union
 
 from ._timeutil import parse_rfc3339
-from .errors import FinlightDecodeError, WebhookVerificationError
+from .errors import FinlightDecodeError, FinlightValidationError, WebhookVerificationError
 from .models import WebhookEvent, WrongPayloadVersion, decode_webhook_event
 
-__all__ = ["Webhooks", "SIGNATURE_HEADER", "TIMESTAMP_HEADER"]
+__all__ = ["Webhooks", "SIGNATURE_HEADER", "TIMESTAMP_HEADER", "DEFAULT_WEBHOOK_TOLERANCE"]
 
 SIGNATURE_HEADER = "X-Webhook-Signature"
 TIMESTAMP_HEADER = "X-Webhook-Timestamp"
-DEFAULT_TOLERANCE = 300.0
+DEFAULT_WEBHOOK_TOLERANCE = 300.0
+DEFAULT_TOLERANCE = DEFAULT_WEBHOOK_TOLERANCE
 
 RawBody = Union[bytes, bytearray, memoryview, str]
 Headers = Union[Mapping[str, Any], Iterable[tuple[Any, Any]]]
@@ -39,9 +40,10 @@ def _to_bytes(raw_body: Any) -> bytes:
         return bytes(raw_body)
     if isinstance(raw_body, str):
         return raw_body.encode("utf-8")
-    raise TypeError(
+    raise _fail(
+        "invalid_raw_body",
         "raw_body must be the raw request body as bytes or str, exactly as received. "
-        "Do not pass parsed JSON: re-serialized JSON never matches the signature."
+        "Do not pass parsed JSON: re-serialized JSON never matches the signature.",
     )
 
 
@@ -92,17 +94,17 @@ def _find_header(pairs: list[tuple[Any, Any]], wanted: str) -> Optional[str]:
     if not found:
         return None
     if len(found) > 1:
-        raise _fail("duplicate header", f"header {wanted} was sent more than once")
+        raise _fail("duplicate_header", f"header {wanted} was sent more than once")
     value = found[0]
     if isinstance(value, (list, tuple)):
         if len(value) != 1:
-            raise _fail("duplicate header", f"header {wanted} was sent more than once")
+            raise _fail("duplicate_header", f"header {wanted} was sent more than once")
         value = value[0]
     if isinstance(value, bytes):
         try:
             return value.decode("ascii")
         except UnicodeDecodeError:
-            raise _fail("non-ascii header", f"header {wanted} contains non-ASCII bytes") from None
+            raise _fail("non_ascii_header", f"header {wanted} contains non-ASCII bytes") from None
     return str(value)
 
 
@@ -111,7 +113,7 @@ def _resolve_now(now: Now) -> datetime:
         return datetime.now(timezone.utc)
     value = now() if callable(now) else now
     if value.tzinfo is None:
-        raise ValueError("now must be an aware datetime")
+        raise FinlightValidationError("now must be an aware datetime", param="now")
     return value
 
 
@@ -138,28 +140,28 @@ class Webhooks:
         """
         body = _to_bytes(raw_body)
         if not isinstance(secret, str) or not secret:
-            raise ValueError("secret must be a non-empty string")
+            raise _fail("invalid_secret", "the webhook secret must be a non-empty string")
         if signature is None or signature == "":
-            raise _fail("missing signature", "no X-Webhook-Signature header")
+            raise _fail("missing_signature", "no X-Webhook-Signature header")
         if timestamp is None or timestamp == "":
-            raise _fail("missing timestamp", "no X-Webhook-Timestamp header")
+            raise _fail("missing_timestamp", "no X-Webhook-Timestamp header")
         for name, value in ((SIGNATURE_HEADER, signature), (TIMESTAMP_HEADER, timestamp)):
             if not isinstance(value, str) or not value.isascii():
-                raise _fail("non-ascii header", f"header {name} contains non-ASCII characters")
+                raise _fail("non_ascii_header", f"header {name} contains non-ASCII characters")
         if not signature.startswith("sha256="):
-            raise _fail("unsupported signature scheme", "signature must start with sha256=")
+            raise _fail("unsupported_signature_scheme", "signature must start with sha256=")
         sent_time = parse_rfc3339(timestamp)
         if sent_time is None:
-            raise _fail("unparseable timestamp", "X-Webhook-Timestamp is not an RFC 3339 timestamp")
+            raise _fail("unparseable_timestamp", "X-Webhook-Timestamp is not an RFC 3339 timestamp")
         expected = hmac.new(
             secret.encode("utf-8"), timestamp.encode("ascii") + b"." + body, hashlib.sha256
         ).hexdigest().encode("ascii")
         given = signature[len("sha256=") :].encode("ascii")
         if len(given) != len(expected) or not hmac.compare_digest(given, expected):
-            raise _fail("signature mismatch", "signature does not match")
+            raise _fail("signature_mismatch", "signature does not match")
         current = _resolve_now(now)
         if abs((current - sent_time).total_seconds()) > tolerance:
-            raise _fail("timestamp outside tolerance", "timestamp is outside the tolerance")
+            raise _fail("timestamp_outside_tolerance", "timestamp is outside the tolerance")
 
     @staticmethod
     def construct_event(
@@ -211,7 +213,7 @@ class Webhooks:
         version = parsed.get("payloadVersion", _MISSING)
         if not _is_v3(version):
             return WrongPayloadVersion(
-                version=2,
+                detected_version=2,
                 payload_version=None if version is _MISSING else version,
                 payload_version_present=version is not _MISSING,
                 raw=parsed,

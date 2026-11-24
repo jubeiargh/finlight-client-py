@@ -48,7 +48,7 @@ def rest(httpserver: Any, monkeypatch: Any) -> Any:
 
 def test_search_example(rest: Any, capsys: Any) -> None:
     example("search").main()
-    assert "more pages: False" in capsys.readouterr().out
+    assert "has more: False" in capsys.readouterr().out
 
 
 def test_search_all_example(rest: Any, capsys: Any) -> None:
@@ -69,7 +69,7 @@ async def test_stream_example(ws_server: WsServer, monkeypatch: Any, capsys: Any
     task = asyncio.ensure_future(example("stream").main(max_events=1))
     conn = await ws_server.next_connection()
     subscribe = await conn.recv()
-    assert subscribe["payloadVersion"] == 3 and subscribe["include"] == ["companies", "events"]
+    assert subscribe["payloadVersion"] == 3 and subscribe["include"] == ["companies"]
     for frame in frames:
         await conn.send(frame)
     await asyncio.wait_for(task, 5)

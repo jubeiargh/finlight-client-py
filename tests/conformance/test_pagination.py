@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from werkzeug.wrappers import Response
 
-from finlight_client import CursorMismatchError
+from finlight_client import CursorMismatchError, FinlightValidationError
 from tests.support import load, snake_args
 
 
@@ -41,7 +41,7 @@ def test_three_pages(case: str, httpserver: Any, make_client: Any) -> None:
         cursor = json.dumps(step["request"]["body"]["cursor"])
         assert page == sent[0][:-1] + b',"cursor":' + cursor.encode() + b"}"
     assert result.pages_fetched == 3 and result.next_cursor is None and not result.truncated
-    with pytest.raises(RuntimeError):
+    with pytest.raises(FinlightValidationError):
         iter(result)
 
 

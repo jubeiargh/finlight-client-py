@@ -86,7 +86,7 @@ def test_error(case: str, path: Path, httpserver: Any, make_client: Any, sleeps:
     else:
         assert type(err) is CLASSES[code] and err.code == code
         assert err.detail == resp["body"]["detail"] and err.title == resp["body"]["title"]
-        assert err.type == resp["body"]["type"] == err.docs_url
+        assert err.type == resp["body"]["type"]
         assert err.request_id == resp["body"]["requestId"]
         want_errors = resp["body"].get("errors", [])
         assert [(e.field, e.issue, e.allowed_values) for e in err.errors] == [
@@ -109,8 +109,9 @@ def test_error(case: str, path: Path, httpserver: Any, make_client: Any, sleeps:
     else:
         raise AssertionError(retry)
 
+    assert err.api_kind == expect["apiKind"]
     if case == "E-18":
-        assert isinstance(err, RateLimitedError) and err.limit_type == "monthly" and err.is_quota_exhausted
+        assert isinstance(err, RateLimitedError) and err.limit_type == "monthly"
         assert err.retry_after is None
     if case == "E-23":
         assert err.request_id.startswith("req_")

@@ -142,7 +142,11 @@ def build_body(fields: Sequence[tuple[str, str, str]], values: dict[str, Any]) -
         value = values.get(py_name)
         if value is None:
             continue
-        converted = _convert(py_name, kind, value)
+        try:
+            converted = _convert(py_name, kind, value)
+        except FinlightValidationError as exc:
+            exc.param = exc.param or py_name
+            raise
         if kind == "include" and not converted:
             continue  # an empty include is left out
         body[wire_name] = converted
@@ -170,13 +174,25 @@ def build_subscribe(
 def include_query(include: Optional[Sequence[str]]) -> list[tuple[str, str]]:
     if include is None:
         return []
-    items = include_list(include)
+    try:
+        items = include_list(include)
+    except FinlightValidationError as exc:
+        exc.param = "include"
+        raise
     if not items:
         return []
     return [("include", ",".join(items))]
 
 
 def company_ids(value: Any) -> list[int]:
+    try:
+        return _company_ids(value)
+    except FinlightValidationError as exc:
+        exc.param = "ids"
+        raise
+
+
+def _company_ids(value: Any) -> list[int]:
     if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
         raise _fail("ids must be a list of integers")
     if not 1 <= len(value) <= 10:

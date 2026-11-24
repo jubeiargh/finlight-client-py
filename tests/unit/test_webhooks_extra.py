@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from finlight_client import (
+    DEFAULT_WEBHOOK_TOLERANCE,
     FinlightDecodeError,
     WebhookEvent,
     Webhooks,
@@ -49,7 +50,7 @@ def test_payload_version_rules() -> None:
     for value in ("3", True, 2, 4, None):
         b = envelope(payloadVersion=value)
         result = construct(b, {"X-Webhook-Signature": sign(b), "X-Webhook-Timestamp": TS})
-        assert isinstance(result, WrongPayloadVersion) and result.version == 2
+        assert isinstance(result, WrongPayloadVersion) and result.detected_version == 2
         assert result.payload_version == value and result.payload_version_present
         assert result.link == ARTICLE["link"]
     assert not issubclass(WrongPayloadVersion, BaseException)  # a result, never an error
@@ -102,15 +103,21 @@ def test_duplicate_and_non_ascii_headers_fail() -> None:
     for headers in dupes:
         with pytest.raises(WebhookVerificationError) as info:
             construct(b, headers)
-        assert info.value.reason == "duplicate header"
+        assert info.value.reason == "duplicate_header"
     with pytest.raises(WebhookVerificationError) as info:
         construct(b, {"X-Webhook-Signature": sig, "X-Webhook-Timestamp": "2026-11-23T21:04:05.123Ζ"})
-    assert info.value.reason == "non-ascii header"
+    assert info.value.reason == "non_ascii_header"
 
 
-def test_parsed_body_is_rejected_with_a_hint() -> None:
-    with pytest.raises(TypeError, match="raw request body"):
+def test_parsed_body_and_empty_secret_are_verification_errors() -> None:
+    with pytest.raises(WebhookVerificationError, match="raw request body") as info:
         construct(json.loads(envelope()), {"X-Webhook-Signature": "x", "X-Webhook-Timestamp": TS})
+    assert info.value.reason == "invalid_raw_body"
+    b = envelope()
+    with pytest.raises(WebhookVerificationError) as info:
+        Webhooks.construct_event(b, {"X-Webhook-Signature": sign(b), "X-Webhook-Timestamp": TS}, "", now=NOW)
+    assert info.value.reason == "invalid_secret"
+    assert DEFAULT_WEBHOOK_TOLERANCE == 300.0
 
 
 def test_signed_body_that_is_not_an_object() -> None:

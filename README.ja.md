@@ -1,11 +1,11 @@
-# finlight-client (Python)
+# finlight client for Python
 
 *[English](README.md) | [简体中文](README.zh-CN.md) | 日本語 | [한국어](README.ko.md)*
 
-> この文書は [README.md](README.md) の翻訳です。内容が異なる場合は英語版が優先されます。
+> この文書は [README.md](README.md) の翻訳で、更新が遅れることがあります。内容が異なる場合は英語版が優先されます。
 
-> **互換性のない新バージョン。** 3.0.0 は finlight API v3 のみに対応します。2.x 向けのコードはそのままでは
-> 動きません。2.x（API v2）を使い続ける場合は `finlight-client<3` に固定してください。
+> **Breaking release.** 3.0.0 は finlight API v3 のみに対応します。2.x 向けのコードはそのままでは動きません。
+> 2.x（API v2）を使い続ける場合は `finlight-client<3` に固定してください。
 > [2.x からの移行](#2x-からの移行) を参照してください。
 
 [finlight](https://finlight.me) ニュース API の Python クライアントです。REST で金融ニュース、企業、ソースを
@@ -13,13 +13,13 @@
 
 ## バージョン
 
-| SDK バージョン | API バージョン | 状態 |
+| SDK version | API version | Status |
 |---|---|---|
 | 3.x | v3（REST `/v3`、WebSocket `payloadVersion` 3、v3 Webhook） | 現行 |
 | 2.x | v2 | 今後のリリースなし |
 
-SDK と API のバージョンは独立しています。API v3 に対応する他の finlight SDK：TypeScript 4.x、PHP 2.x、
-Go モジュール `/v2`、.NET 2.x、Java 1.x、Ruby 1.x、Rust 0.2。
+SDK と API のバージョンは独立しています。API v3 に対応する finlight SDK：TypeScript 4.x、Python 3.x、
+PHP 2.x、Go モジュール `/v2`、.NET 2.x、Java 1.x、Ruby 1.x、Rust 0.2。
 
 ## 動作要件
 
@@ -38,9 +38,9 @@ pip install "finlight-client>=3,<4"
 from finlight_client import FinlightClient
 
 with FinlightClient(api_key="YOUR_API_KEY") as client:
-    page = client.articles.search(query="ticker:NVDA", limit=10, include=["companies"])
+    page = client.articles.search(query="ticker:NVDA", limit=10)
     for article in page.articles:
-        print(article.published_at, article.title)
+        print(article.title)
 ```
 
 REST 呼び出しは同期、ストリームは非同期イテレーターです。引数は snake_case で、それぞれ API の
@@ -59,7 +59,7 @@ page = client.articles.search(
     include=["content", "companies", "events"],
     limit=50,
 )
-print(page.has_more, page.next_cursor)
+print(page.pagination.has_more, page.pagination.next_cursor)
 ```
 
 `search_all` はページを自動でたどります。呼び出した時点でリクエスト内容が固定され、以降のページでは
@@ -73,38 +73,56 @@ if results.truncated:
     print("continue with cursor", results.next_cursor)
 ```
 
-結果は 1 回だけ反復できます。未知の引数は `TypeError` になり、形式の誤り（例：`limit=0`、
-`languages=[]`）は送信前に `FinlightValidationError` になります。語彙の値はローカルで検査しないため、
-サーバー側で追加された値も SDK を更新せずに使えます。
+続きを取得するには、同じ引数に `cursor=results.next_cursor` を加えて `search_all` を再度呼び出します。
+結果は 1 回だけ反復できます。未知の引数は `TypeError` になり、形式の誤り（例：`limit=0`、`languages=[]`）は
+送信前に `FinlightValidationError` になります。語彙の値はローカルで検査しないため、サーバー側で追加された値も
+SDK を更新せずに使えます。
 
 ## 記事・企業・ソースの参照
 
 ```python
+from finlight_client import cache_info
+
 article = client.articles.get("EU8JwpsZ8iJehuyPZjMqRz", include=["content"])
 article = client.articles.get_by_link("https://www.reuters.com/...")
 
 companies = client.companies.search("NVDA", mic="XNAS")   # at most 10, no pages
 companies = client.companies.get_many([4821, 1001])
 company = client.companies.get(4821)                      # revalidated with its ETag next time
+print(cache_info(company))
 
 sources = client.sources.list()
 ```
 
-見つからない場合は `NotFoundError` になります。企業の参照には `entityAccess` 権限が必要です
-（ない場合は `ForbiddenError`）。
+- 見つからない場合は `NotFoundError` になり、空の結果にはなりません。
+- 記事 id の導入前に登録された記事はリンクでのみ取得できます。
+- 企業の参照には `entityAccess` 権限が必要です（ない場合は `ForbiddenError`）。
+- `companies.get` は直近のレコードを保持し、ETag で再検証します（`company_cache_size`）。独自の
+  `if_none_match=...` を渡すと、304 応答では `None` が返ります。`cache_info(record)` は `etag`、
+  `cache_control`、`not_modified` を返します。
+- `companies.search`、`companies.get_many`、`sources.list` は `skipped` 属性付きのリストを返します。
+  検索ページの `ArticlePage.skipped` も同様で、読み取れなかったエントリが入ります。
 
-### 記事の読み方
+## 欠落、null、空
 
-- `content` と `sentiment` には 3 つの状態があります。キーが送られていない（未リクエストまたは権限なし）
-  場合 `article.content_present` は false です。`content_present` が true で `article.content is None` なら
-  「テキストなし」です。`sentiment_present` も同様です。
-- `companies` と `events` は送られていない場合 `None`、タグ付け済みで該当なしの場合 `[]` です。
-  `companies_present` と `events_present` で確認してください。
-- `events[].company_ids` は同じ応答に `companies` がある場合だけ送られます。
-- タイムスタンプは送られた文字列のまま保持されます（`published_at`）。`published_at_time` などの
-  `*_time` プロパティは厳密に解析し、読めない値には `None` を返します。
-- 新しいサーバーからの未知のキーは無視されます。`finlight_client.raw_json(article)` で元の JSON を取得できます。
-- 語彙の値は通常の文字列です。`finlight_client` の定数（`EventType.MNA`、`Role.ACQUIRER` など）と
+一部のキーはプランや `include` によって変わり、最大 3 つの状態があります：
+
+| 状態 | 意味 | 確認方法 |
+|---|---|---|
+| 欠落 | 未リクエスト、権限なし、または raw ストリーム | `article.content_present` が `False` |
+| `None` | リクエスト済みで権限もあるが値がない | `content_present` が `True` かつ `content is None` |
+| 値 | 値そのもの | `content` に値がある |
+
+- `content` と `sentiment` は 3 つの状態すべてを持ちます。`content_present` と `sentiment_present` を使います。
+- `companies` と `events` は欠落時に `None`、タグ付け済みで該当なしの場合に `[]` です。`companies_present` と
+  `events_present` を使ってください。`[]` が「権限なし」を意味することはありません。
+- `events[].company_ids` は同じ応答に `companies` がある場合を除き `None` です。
+- `fullArticleAccess` がない場合 `Source.has_content` は `None` です。「本文なし」ではなく「不明」の意味です。
+- タイムスタンプは送られた文字列のまま保持されます（`published_at`）。`published_at_time` などの `*_time`
+  プロパティは厳密に解析し、読めない値には `None` を返します。
+- 新しいサーバーからの未知のキーは無視されます。`finlight_client.raw_json(article)` で元の JSON を取得でき、
+  `to_wire(model)` は欠落したキーを省いたままモデルを書き戻します。
+- 語彙の値は通常の文字列です。`finlight_client` の定数（`EventType.MNA`、`CompanyRole.ACQUIRER` など）と
   比較してください。未知の値は送られたまま保持されます。
 
 ## リアルタイムストリーム
@@ -120,7 +138,7 @@ async def main() -> None:
         language="en",
         include=["companies", "events"],
         include_updates=True,
-        on_reconnect=lambda last_seen, reason: print("reconnected", reason, last_seen),
+        on_reconnect=lambda info: print("reconnected", info.reason, info.last_seen_at),
     ) as stream:
         async for event in stream:
             print(event.kind, event.data.title if event.data else event.event)
@@ -131,28 +149,31 @@ asyncio.run(main())
 - `event.kind` は `created`、`updated`、`other`（この SDK がまだ知らないイベント）のいずれかです。
 - `client.raw_stream(query=..., sources=..., exclude_sources=..., language=..., include_updates=...)`
   はエンリッチ前の記事を配信します。`include` はなく、content、sentiment、companies、events もありません。
+- フックは通常の関数でも `async def` でも構いません：`on_admitted(AdmittedInfo)`、最初を除く新しい接続の
+  たびの `on_reconnect(ReconnectInfo)`、ストリームを終わらせない問題の `on_error(FinlightError)`、そして
+  `on_quota_wait(QuotaWaitInfo)`。フック内で発生したエラーはログに出るだけで、ストリームは止まりません。
 - ストリームは 25 秒ごとに ping を送り、60 秒 pong がなければ再接続し、115 分後に新しい接続を開きます。
   再接続のたびに同じ購読を送り、重複した配信を捨てます。
-- 自動でのバックフィルは行いません。`on_reconnect(last_seen, reason)` は最後に見た `availableAt`
-  （raw では `firstSeenAt`）を受け取ります。欠けた分は `articles.search_all(from_=last_seen,
-  order_by="availableAt")`（raw では `order_by="firstSeenAt"`）で補ってください。
+- 自動でのバックフィルは行いません。`ReconnectInfo.last_seen_at` は最後に見た `availableAt`（raw では
+  `firstSeenAt`）です。欠けた分は `articles.search_all(from_=info.last_seen_at, order_by="availableAt")`
+  （raw では `order_by="firstSeenAt"`）で補ってください。
 - 致命的な問題はエラーでループを終了します：無効なキー（`UnauthorizedError`）、WebSocket の権限なし
   （`ForbiddenError`）、購読の拒否（`ValidationFailedError`）、別の接続による乗っ取りの `PreemptedError`。
   その他の問題は再接続し、`on_error` に通知されます。
-- 月間の WebSocket クォータを使い切った場合（接続の拒否、または理由が `quota_exceeded` の
-  `PreemptedError`）、ストリームは終了しません。クォータが戻るまで 1 時間ごとに再試行します。各試行で
-  警告をログに出し、`on_error` を呼びます。`quota_reconnect=False` にするとエラーで終了します。
-  間隔は `quota_reconnect_interval` で変更できます。
+- 月間の WebSocket クォータを使い切った場合（接続の拒否、または理由が `quota_exceeded` のプリエンプト）、
+  ストリームは終了しません。クォータが戻るまで 1 時間ごとに再試行します。待機のたびに警告をログに出し、
+  `on_quota_wait` を呼びます。`quota_reconnect=False` にするとエラーで終了します。間隔は
+  `quota_reconnect_interval` で変更できます。
 - `async with` ブロックを抜けると接続が閉じます。キャンセルが握りつぶされることはありません。
 
 知っておくべき制限：
 
 - プランの接続数上限は enriched、raw、旧 SDK の接続で共有されます。上限に達しているときの新しい接続は
-  拒否され、SDK は 60 秒後に再試行します。クライアントに `takeover=True` を渡すと、代わりに最も古い
-  接続を置き換えます。
+  拒否され、SDK は 60 秒後に再試行します。`stream()` または `raw_stream()` に `takeover=True` を渡すと、
+  代わりに最も古い接続を置き換えます。
 - 購読直後に、条件に合う最新の記事が 1 件送られます（再接続のたびにも）。古い記事のこともあります。
-- 32,000 バイトを超えるライブフレームはサーバーが通知なしに破棄します。長い記事で
-  `include=["content"]` を使うと起こり得ます。`articles.get` で取得してください。
+- 32,000 バイトを超えるライブフレームはサーバーが通知なしに破棄します。長い記事で `include=["content"]` を
+  使うと起こり得ます。`articles.get` で取得してください。
 - `connection.admitted` はサーバーが購読を検査する前に届きます。受け入れられたという意味ではありません。
 - WebSocket 接続は `websockets` ライブラリと同様に環境変数のプロキシ設定（`HTTPS_PROXY`、`ALL_PROXY`）を
   使います。無効にするには `websocket_options={"proxy": None}` を渡してください。
@@ -182,7 +203,9 @@ def handle(raw_body: bytes, headers) -> int:
   `http.server`、WSGI environ）。名前の大文字・小文字は区別しません。
   `construct_event_from_values(raw_body, signature, timestamp, secret)` は 2 つのヘッダー値を直接受け取り、
   `verify_signature` は検証だけを行います。
-- タイムスタンプは前後どちらの方向にも 300 秒（`tolerance`）以内である必要があります。
+- タイムスタンプは前後どちらの方向にも `DEFAULT_WEBHOOK_TOLERANCE`（300 秒）以内である必要があります。
+- `WebhookVerificationError.reason` が理由を示します（例：`signature_mismatch`、`timestamp_outside_tolerance`）。
+  生のボディではなく解析済みのボディを渡すと `invalid_raw_body` で失敗します。
 - ダッシュボードのテスト Webhook では `result.is_test` が true になります。プランによる制限はかかりません。
 - 410 は絶対に返さないでください。Webhook が即座に無効化されます。2xx 以外が 10 回続いても無効化されます。
 
@@ -195,30 +218,27 @@ def handle(raw_body: bytes, headers) -> int:
 | FastAPI / Starlette | `await request.body()` |
 | `http.server` | `self.rfile.read(int(self.headers["Content-Length"]))` |
 
-Webhook を v3 に切り替える手順：まずこの SDK をデプロイし、`WrongPayloadVersion` には 2xx を返して
-元の JSON を保存します。次にダッシュボードで Webhook を `payloadVersion` 3 に切り替えます。切り替え前に
-キューに入った再送は古い形式のまま届くため、その後約 2 時間待ってください。
-
 ## エラーと再試行
 
-すべてのエラーは `FinlightError` を継承し、`kind` 文字列を持ちます。
+すべてのエラーは `FinlightError` を継承し、`kind`（`api`、`validation`、`network`、`timeout`、`decode`、
+`webhook_verification`、`preempted`）を持ちます。
 
 | エラー | 発生条件 |
 |---|---|
-| `FinlightApiError` | API がエラーを返した。`status`、`code`、`title`、`detail`、`request_id`、`errors`、`raw`、`docs_url` を持つ。code ごとのサブクラス：`ValidationFailedError`、`CursorInvalidError`、`CursorMismatchError`、`UnauthorizedError`、`ForbiddenError`、`NotFoundError`、`RateLimitedError`、`InternalServerError`。未知の code は基底クラスのまま。 |
-| `RateLimitedError` | `limit_type` は `monthly`、`burst`、またはより新しい値。`retry_after` は秒。 |
-| `FinlightValidationError` | リクエストがローカルで拒否された（`ValueError` の一種）。 |
+| `FinlightApiError` | API がエラーを返した：REST、拒否されたストリーム接続、ストリームのエラー。`status`、`code`、`type`、`title`、`detail`、`request_id`、`errors`（`FieldIssue`）、`api_kind`、`raw` を持つ。サブクラス：`ValidationFailedError`、`CursorInvalidError`、`CursorMismatchError`、`UnauthorizedError`、`ForbiddenError`、`NotFoundError`、`RateLimitedError`、`InternalServerError`。それ以外は `api_kind` が `other`。 |
+| `RateLimitedError` | `limit_type` は `monthly`、`burst`、`unknown`、またはより新しい値。`retry_after` は秒。 |
+| `FinlightValidationError` | リクエストがローカルで拒否された（`ValueError` でもある）。`param` がキーを示す。 |
 | `FinlightNetworkError`、`FinlightTimeoutError` | ネットワーク障害またはタイムアウト。元のエラーは `__cause__`。 |
-| `FinlightDecodeError` | 単一の応答を読み取れなかった。 |
+| `FinlightDecodeError` | 応答を読み取れなかった（`path`、`raw`）。 |
 | `WebhookVerificationError` | Webhook の検証に失敗した（`reason`）。 |
 | `PreemptedError` | 別の接続がストリームを引き継いだ（`reason`、`new_lease_id`）。`quota_reconnect=False` のときはクォータ切れでも発生。 |
 
-再試行：5xx 応答、ネットワークエラー、タイムアウトは待ち時間を延ばしながら最大 3 回再試行します
-（検索も含む）。400、401、403、404 と月間クォータの 429 は再試行しません。月間クォータの 429 は `search_all` の中でも
-すぐにエラーになり、クォータを待つのはストリームだけです（上記参照）。バースト 429 は
-`Retry-After` 秒（ヘッダーがなければ 10 秒）待ってからもう一度だけ試します。`retry_on_burst="off"` で
-無効にできます。呼び出しごとに専用の `X-Request-Id` を送り、再試行でも同じ値を使います。
-Ctrl+C で呼び出しを中断でき、待機はすぐに終わり、再試行もされません。
+再試行：5xx 応答、ネットワークエラー、タイムアウトは待ち時間を延ばしながら最大 3 回再試行します（検索も含む）。
+400、401、403、404 と月間クォータの 429 は再試行しません。月間クォータの 429 は `search_all` の中でも
+すぐにエラーになり、クォータを待つのはストリームだけです（上記参照）。バースト 429 は `Retry-After` 秒
+（ヘッダーがなければ 10 秒）ちょうど待ってからもう一度だけ試します。既定で有効で、`max_retries` には数えず、
+`retry_on_burst="off"` で無効にできます。呼び出しごとに専用の `X-Request-Id` を送り、再試行でも同じ値を
+使います。Ctrl+C で REST 呼び出しは再試行なしですぐに止まり、タスクをキャンセルするとストリームが止まります。
 
 ## 設定
 
@@ -228,22 +248,55 @@ client = FinlightClient(
     base_url="https://api.finlight.me",   # a trailing slash is fine
     wss_url="wss://wss.finlight.me",      # raw streams use <wss_url>/raw
     timeout=30.0,                         # seconds per attempt
-    total_timeout=None,                   # optional cap per call, retries included
-    max_retries=3,
-    retry_on_burst="once",                # or "off"
-    max_pages=10,
-    ping_interval=25.0, pong_timeout=60.0, rotation_interval=6900.0,
-    takeover=False,
-    quota_reconnect=True, quota_reconnect_interval=3600.0,
-    session=None,                         # your own requests.Session
 )
 ```
 
-時間はすべて秒です。`FinlightConfig` を作って `config=` で渡すこともできます。独自の
-`requests.Session` を使う場合は、そのタイムアウト、プロキシ、アダプターが適用されます。試行ごとに
-クォータを消費するため、再試行アダプターは追加しないでください。SDK は自分で作っていない session を
-閉じることはありません。`websocket_options` は `websockets.connect` に渡されます。SDK は
-`finlight_client` ロガーでログを出し、既定では何も出力しません。
+すべてのキーはキーワード引数または `FinlightConfig`（`config=`）で設定できます。時間は秒です。
+
+| キー | 既定値 | 意味 |
+|---|---|---|
+| `api_key` | 必須 | API キー（空は不可） |
+| `base_url` | `https://api.finlight.me` | REST のベース URL |
+| `wss_url` | `wss://wss.finlight.me` | WebSocket の URL、raw は `/raw` |
+| `timeout` | 30 | REST の試行ごと |
+| `total_timeout` | なし | 呼び出しごとの上限（再試行とバースト待機を含む） |
+| `max_retries` | 3 | 5xx、ネットワークエラー、タイムアウトの再試行回数 |
+| `retry_base_delay`、`retry_max_delay` | 0.5、8 | 再試行間の増えていく待ち時間 |
+| `retry_on_burst` | `"once"` | `"off"` でバースト再試行を無効化 |
+| `burst_wait` | 10 | `Retry-After` がないときのバースト待機 |
+| `max_pages` | 10 | `search_all` のページ上限 |
+| `max_response_bytes` | 32 MiB | REST 応答のサイズ上限 |
+| `company_cache_size` | 256 | `companies.get` が保持するレコード数、0 で無効 |
+| `ping_interval` | 25 | ストリームの ping |
+| `watchdog_timeout` | 60 | この時間 pong がなければ再接続 |
+| `rotation_interval` | 6900（115 分） | 2 時間の上限前に新しい接続を開く |
+| `reconnect_base_delay`、`reconnect_max_delay` | 1、30 | 再接続間の増えていく待ち時間 |
+| `long_backoff` | 60 | 接続数上限や 429 で拒否された後の待機 |
+| `quota_reconnect` | `True` | 終了せずに月間 WebSocket クォータを待つ |
+| `quota_reconnect_interval` | 3600 | クォータ再試行の間隔 |
+| `search_failed_threshold` | 5 | `on_error` までの連続 `SEARCH_FAILED` 回数 |
+| `dedupe_cache_size` | 1000 | ストリームごとに記憶する配信数 |
+| `max_message_bytes` | 32 MiB | ストリームメッセージのサイズ上限 |
+| `connect_timeout` | 30 | WebSocket ハンドシェイク |
+| `session` | なし | 独自の `requests.Session` |
+| `websocket_options`、`websocket_connect` | なし | `websockets.connect` のオプション、または独自の WebSocket トランスポート |
+| `clock` | システム時計 | ストリームのタイマーの時刻源（テスト用） |
+
+独自の `requests.Session` を使う場合は、そのタイムアウト、プロキシ、アダプターが適用されます。試行ごとに
+クォータを消費するため、再試行アダプターは追加しないでください。SDK は自分で作っていない session を閉じません。
+
+## ログ
+
+SDK は標準の `logging` モジュールで `finlight_client` という名前でログを出します。設定しなければ何も出力しません。
+警告は読み飛ばしたエントリ、再接続、クォータ待機を扱います。API キー、Webhook シークレット、署名、ボディ全体が
+ログやエラーメッセージに出ることはなく、ヘッダーを表示する `websockets` ライブラリのデバッグ出力も抑止されます。
+SDK はグローバルなログ設定を変更せず、シグナルハンドラーも登録しません。
+
+```python
+import logging
+
+logging.getLogger("finlight_client").setLevel(logging.INFO)
+```
 
 ## データに関する注意
 
@@ -273,6 +326,13 @@ client = FinlightClient(
 | Webhook の `isUpdate` | `event.event == "article.updated"` |
 | Webhook のボディ | `event.data` と重複排除用の `event.event_id` |
 
+Webhook を v3 に切り替える 4 つの手順：
+
+1. この SDK をデプロイします。
+2. `WrongPayloadVersion` には 2xx を返し、その `raw` JSON を保存します。
+3. ダッシュボードで Webhook を `payloadVersion` 3 に切り替えます。
+4. 約 2 時間待ちます。切り替え前にキューに入った再送は古い形式のまま届きます。
+
 同じキーで 2.x と 3.x のストリームを並行して動かさないでください。接続数の上限を共有します。
 
 ## 開発
@@ -284,9 +344,9 @@ python scripts/sync_conformance.py --from <monorepo>/shared/contracts/api-v3
 python scripts/check_conformance.py
 ```
 
-`CONFORMANCE.md` は契約キットの各ケースと対応するテストの一覧です。ライブテストは dev 環境に対してのみ
-実行し、`FINLIGHT_API_KEY`、`FINLIGHT_BASE_URL`、`FINLIGHT_WSS_URL` が必要です：
-`pytest tests/live -m live --force-enable-socket`。
+`conformance/` は契約キットのコピーで、`CONTRACT_VERSION` と sha256 の `MANIFEST` を含みます。`CONFORMANCE.md`
+は各ケースと対応するテストの一覧です。ライブテストは dev 環境に対してのみ実行し、`FINLIGHT_API_KEY`、
+`FINLIGHT_BASE_URL`、`FINLIGHT_WSS_URL` が必要です：`pytest tests/live -m live --force-enable-socket`。
 
 ## ライセンス
 

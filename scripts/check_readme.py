@@ -13,18 +13,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKELETON = [
-    "# finlight-client (Python)",
+    "# finlight client for Python",
     "## Versions",
     "## Requirements",
     "## Installation",
     "## Quick start",
     "## Search articles",
     "## Look up articles, companies and sources",
-    "### Reading articles",
+    "## Absent, null and empty",
     "## Real-time streams",
     "## Webhooks",
     "## Errors and retries",
     "## Configuration",
+    "## Logging",
     "## Data notes",
     "## Migrating from 2.x",
     "## Development",
@@ -46,7 +47,8 @@ def main() -> int:
         problems.append(f"README.md headings differ from the skeleton: {headings(english)}")
     if "| SDK version | API version |" not in english:
         problems.append("README.md has no version table")
-    if "**Breaking release.**" not in english.split("## Versions")[0]:
+    head = english.split("## Versions")[0]
+    if "**Breaking release.**" not in head or "finlight-client<3" not in head:
         problems.append("README.md must start with the breaking-change notice")
     blocks = FENCE.findall(english)
     for lang, code in blocks:
@@ -62,6 +64,8 @@ def main() -> int:
             problems.append(f"{name}: heading structure differs from README.md")
         if FENCE.findall(text) != blocks:
             problems.append(f"{name}: code blocks differ from README.md")
+        if "**Breaking release.**" not in text.split("\n## ")[0]:
+            problems.append(f"{name}: breaking-change notice missing at the top")
     for problem in problems:
         print(problem)
     return 1 if problems else 0

@@ -14,7 +14,7 @@ from .articles import ArticlesService
 from .companies import CompaniesService
 from .errors import FinlightValidationError
 from .sources import SourcesService
-from .stream import Hook, Stream
+from .stream import FinlightStream, Hook
 
 __all__ = ["FinlightClient"]
 
@@ -56,7 +56,7 @@ class FinlightClient:
         self._config = config
         self._http = HttpTransport(config)
         self.articles = ArticlesService(self._http, config)
-        self.companies = CompaniesService(self._http)
+        self.companies = CompaniesService(self._http, config.company_cache_size)
         self.sources = SourcesService(self._http)
 
     @property
@@ -90,29 +90,29 @@ class FinlightClient:
         exclude_empty_content: Optional[bool] = None,
         include_updates: Optional[bool] = None,
         include: Optional[Sequence[str]] = None,
-        on_reconnect: Optional[Hook] = None,
+        takeover: bool = False,
         on_admitted: Optional[Hook] = None,
+        on_reconnect: Optional[Hook] = None,
         on_error: Optional[Hook] = None,
-    ) -> Stream:
+        on_quota_wait: Optional[Hook] = None,
+    ) -> FinlightStream:
         """Enriched real-time stream. Arguments are checked now; the connection opens on iteration.
+
+        ``takeover=True`` replaces the stalest connection of your key when the
+        connection limit is reached (off by default).
 
         Hooks may be plain functions or coroutine functions:
 
-        * ``on_reconnect(last_seen, reason)`` after every new connection but the first;
-          ``last_seen`` is the latest ``availableAt`` (fallback ``firstSeenAt``) seen.
-        * ``on_admitted(lease_id, server_now, client_nonce)`` for each ``connection.admitted``.
-        * ``on_error(error)`` for problems that do not end the stream.
+        * ``on_admitted(AdmittedInfo)`` for each ``connection.admitted``.
+        * ``on_reconnect(ReconnectInfo)`` after every new connection but the first;
+          ``last_seen_at`` is the latest ``availableAt`` (fallback ``firstSeenAt``) seen.
+        * ``on_error(FinlightError)`` for problems that do not end the stream.
+        * ``on_quota_wait(QuotaWaitInfo)`` whenever the stream waits for a new
+          monthly WebSocket quota (see ``quota_reconnect``).
         """
         values = dict(locals())
         frame = build_subscribe(STREAM_FIELDS, values)
-        return Stream(
-            self._config,
-            frame,
-            raw=False,
-            on_reconnect=on_reconnect,
-            on_admitted=on_admitted,
-            on_error=on_error,
-        )
+        return self._make_stream(frame, False, values)
 
     def raw_stream(
         self,
@@ -122,21 +122,30 @@ class FinlightClient:
         exclude_sources: Optional[Sequence[str]] = None,
         language: Optional[str] = None,
         include_updates: Optional[bool] = None,
-        on_reconnect: Optional[Hook] = None,
+        takeover: bool = False,
         on_admitted: Optional[Hook] = None,
+        on_reconnect: Optional[Hook] = None,
         on_error: Optional[Hook] = None,
-    ) -> Stream:
+        on_quota_wait: Optional[Hook] = None,
+    ) -> FinlightStream:
         """Raw real-time stream (skeleton articles, before enrichment). Same hooks as :meth:`stream`.
 
-        Raw takes no ``include``; ``on_reconnect`` gets the latest ``firstSeenAt``.
+        Raw takes no ``include``; ``ReconnectInfo.last_seen_at`` is the latest ``firstSeenAt``.
         """
         values = dict(locals())
         frame = build_subscribe(RAW_STREAM_FIELDS, values)
-        return Stream(
+        return self._make_stream(frame, True, values)
+
+    def _make_stream(self, frame: dict[str, Any], raw: bool, values: dict[str, Any]) -> FinlightStream:
+        if not isinstance(values["takeover"], bool):
+            raise FinlightValidationError("takeover must be True or False", param="takeover")
+        return FinlightStream(
             self._config,
             frame,
-            raw=True,
-            on_reconnect=on_reconnect,
-            on_admitted=on_admitted,
-            on_error=on_error,
+            raw=raw,
+            takeover=values["takeover"],
+            on_admitted=values["on_admitted"],
+            on_reconnect=values["on_reconnect"],
+            on_error=values["on_error"],
+            on_quota_wait=values["on_quota_wait"],
         )

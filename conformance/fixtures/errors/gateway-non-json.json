@@ -21,6 +21,7 @@
   },
   "expect": {
     "code": null,
+    "apiKind": "other",
     "retry": "backoff"
   }
 }

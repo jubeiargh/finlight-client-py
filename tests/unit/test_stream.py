@@ -9,10 +9,14 @@ from typing import Any
 import pytest
 
 from finlight_client import (
+    AdmittedInfo,
     FinlightApiError,
     FinlightClient,
     FinlightConfig,
+    FinlightValidationError,
     ForbiddenError,
+    QuotaWaitInfo,
+    ReconnectInfo,
     StreamEvent,
 )
 from tests.support import FakeClock, WsServer, load, settle
@@ -56,10 +60,13 @@ class Consumer:
 
 def test_default_intervals() -> None:
     cfg = FinlightConfig(api_key="k")
-    assert (cfg.ping_interval, cfg.pong_timeout, cfg.rotation_interval) == (25.0, 60.0, 115 * 60.0)
-    assert cfg.max_message_bytes >= 16 * 1024 * 1024
-    assert cfg.dedupe_size == 1000 and cfg.max_pages == 10 and cfg.max_retries == 3
-    assert cfg.retry_on_burst == "once" and cfg.burst_wait == 10.0 and cfg.takeover is False
+    assert (cfg.ping_interval, cfg.watchdog_timeout, cfg.rotation_interval) == (25.0, 60.0, 115 * 60.0)
+    assert cfg.max_message_bytes == 32 * 1024 * 1024 and cfg.connect_timeout == 30.0
+    assert (cfg.reconnect_base_delay, cfg.reconnect_max_delay, cfg.long_backoff) == (1.0, 30.0, 60.0)
+    assert cfg.company_cache_size == 256 and cfg.search_failed_threshold == 5
+    assert cfg.dedupe_cache_size == 1000 and cfg.max_pages == 10 and cfg.max_retries == 3
+    assert cfg.retry_on_burst == "once" and cfg.burst_wait == 10.0
+    assert not hasattr(cfg, "takeover")  # a stream option, not a config key
     assert cfg.quota_reconnect is True and cfg.quota_reconnect_interval == 3600.0
 
 
@@ -106,8 +113,9 @@ async def test_async_with_closes(ws_server: WsServer, fake_clock: FakeClock) -> 
         await conn.send(frame("article.created", ARTICLE))
         assert (await asyncio.wait_for(pending, 3)).data.id == ARTICLE["id"]
     await asyncio.wait_for(conn.closed.wait(), 3)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(FinlightValidationError):
         stream.__aiter__()
+    assert stream.closed
 
 
 async def test_cancellation_propagates_and_closes(ws_server: WsServer, fake_clock: FakeClock) -> None:
@@ -125,6 +133,7 @@ async def test_hook_errors_do_not_stop_the_stream(ws_server: WsServer, fake_cloc
     seen: list[Any] = []
 
     def broken(*args: Any) -> None:
+        seen.append(args)
         raise RuntimeError("user bug")
 
     async def async_hook(*args: Any) -> None:
@@ -139,13 +148,15 @@ async def test_hook_errors_do_not_stop_the_stream(ws_server: WsServer, fake_cloc
                      "data": {"code": "INTERNAL_ERROR", "message": "Message processing failed"}})
     await conn.send(frame("article.created", ARTICLE))
     await consumer.wait_items(1)
-    assert consumer.error is None and seen and seen[0][0].code == "INTERNAL_ERROR"
+    assert consumer.error is None
+    assert isinstance(seen[0][0], AdmittedInfo) and seen[0][0].lease_id == "l1"
+    assert seen[1][0].code == "INTERNAL_ERROR"
     await stream.close()
 
 
 async def test_raw_reconnect_reports_first_seen_and_dedupe_survives(ws_server: WsServer, fake_clock: FakeClock) -> None:
     reconnects: list[Any] = []
-    stream = make(ws_server, fake_clock).raw_stream(query="x", on_reconnect=lambda *a: reconnects.append(a))
+    stream = make(ws_server, fake_clock).raw_stream(query="x", on_reconnect=reconnects.append)
     consumer = Consumer(stream)
     conn = await ws_server.next_connection()
     await conn.recv()
@@ -168,8 +179,8 @@ async def test_raw_reconnect_reports_first_seen_and_dedupe_survives(ws_server: W
     await consumer.wait_items(2)
     await settle(0.05)
     assert [i.data.id for i in consumer.items] == [RAW_ARTICLE["id"], "other-id"]
-    assert reconnects == [(RAW_ARTICLE["firstSeenAt"], "closed")]
-    assert stream.last_seen == RAW_ARTICLE["firstSeenAt"]
+    assert reconnects == [ReconnectInfo(RAW_ARTICLE["firstSeenAt"], "closed", 2)]
+    assert stream.last_seen_at == RAW_ARTICLE["firstSeenAt"]
     await stream.close()
 
 
@@ -184,7 +195,7 @@ async def test_enriched_last_seen_prefers_available_at(ws_server: WsServer, fake
     await conn.send(frame("article.created", ARTICLE))
     await conn.send(frame("article.updated", late))
     await consumer.wait_items(2)
-    assert stream.last_seen == "2026-09-18T13:00:00.000Z"
+    assert stream.last_seen_at == "2026-09-18T13:00:00.000Z"
     await stream.close()
 
 
@@ -288,20 +299,23 @@ async def test_large_frame_is_accepted(ws_server: WsServer, fake_clock: FakeCloc
 async def test_quota_reconnect_interval_is_configurable(ws_server: WsServer, fake_clock: FakeClock,
                                                          caplog: Any) -> None:
     errors: list[Any] = []
+    waits: list[QuotaWaitInfo] = []
     refusal = (403, '{"message":"WebSocket quota exceeded for the current period"}')
     ws_server.reject_plan.extend([refusal, refusal])
-    stream = make(ws_server, fake_clock, quota_reconnect_interval=600.0).stream(query="x", on_error=errors.append)
+    stream = make(ws_server, fake_clock, quota_reconnect_interval=600.0).stream(
+        query="x", on_error=errors.append, on_quota_wait=waits.append)
     consumer = Consumer(stream)
     for _ in range(100):
-        if ws_server.dials and errors:
+        if ws_server.dials and waits:
             break
         await asyncio.sleep(0.005)
     await fake_clock.advance(599.9)
     assert len(ws_server.dials) == 1 and consumer.error is None
     await fake_clock.advance(0.2)
     await settle(0.05)
-    assert len(ws_server.dials) == 2 and len(errors) == 2
-    assert all(isinstance(e, ForbiddenError) for e in errors)
+    assert len(ws_server.dials) == 2 and errors == []
+    assert [(w.attempt, w.next_attempt_in) for w in waits] == [(1, 600.0), (2, 600.0)]
+    assert all(isinstance(w.error, ForbiddenError) and w.error.api_kind == "forbidden" for w in waits)
     assert caplog.text.count("quota exhausted") == 2
     await stream.close()
 
@@ -328,3 +342,21 @@ async def test_connection_limit_preempt_stays_terminal(ws_server: WsServer, fake
     assert getattr(consumer.error, "reason", None) == "connection_limit"
     await fake_clock.advance(7200)
     assert len(ws_server.dials) == 1
+
+
+async def test_reconnect_reason_reports_the_last_dial_failure(ws_server: WsServer, fake_clock: FakeClock) -> None:
+    reconnects: list[ReconnectInfo] = []
+    stream = make(ws_server, fake_clock).stream(query="x", on_reconnect=reconnects.append)
+    consumer = Consumer(stream)
+    conn = await ws_server.next_connection()
+    ws_server.reject_plan.append((429, ""))
+    await conn.close(1001)
+    for _ in range(200):
+        if len(ws_server.dials) >= 3:
+            break
+        await fake_clock.advance(1.0)
+    await ws_server.next_connection()
+    await settle(0.05)
+    assert reconnects == [ReconnectInfo(None, "rate_limited", 2)]
+    assert consumer.error is None
+    await stream.close()
