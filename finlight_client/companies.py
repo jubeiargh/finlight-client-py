@@ -1,8 +1,8 @@
 """``client.companies``: search, get_many, get (needs ``entityAccess``).
 
-Every successful call costs 1 credit (same monthly quota and burst limit as
-articles; ``get_many`` costs 1 per call, not per company). A 304 answer to an
-ETag revalidation and errors are free.
+Every call costs 1 credit (same monthly quota and burst limit as articles;
+``get_many`` costs 1 per call, not per company). A 304 answer to an ETag
+revalidation and errors cost 1 credit too.
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ class CompaniesService:
     def search(self, q: str, *, mic: Optional[str] = None) -> CompanyList:
         """Resolve a ticker, name, ISIN or vendor notation (at most 10 results, no pages).
 
-        Costs 1 credit per successful call; errors are free.
+        Costs 1 credit per call, errors included.
         """
         if not isinstance(q, str):
             raise FinlightValidationError("q must be a string", param="q")
@@ -80,7 +80,7 @@ class CompaniesService:
     def get_many(self, ids: Sequence[int]) -> CompanyList:
         """Resolve 1 to 10 company ids. Unknown ids are left out; order is not guaranteed.
 
-        Costs 1 credit per successful call, however many ids; errors are free.
+        Costs 1 credit per call, however many ids, errors included.
         """
         checked = company_ids(ids)
         resp = self._http.call("GET", "/v3/companies", query=[("ids", ",".join(str(i) for i in checked))])
@@ -101,7 +101,7 @@ class CompaniesService:
         returns ``None`` ("not modified"). ``cache_info(record)`` gives the ETag and
         Cache-Control of a record.
 
-        A 200 answer costs 1 credit; a 304 answer (revalidation) and errors are free.
+        Every call costs 1 credit: a 200, a 304 answer (revalidation) and errors alike.
         """
         if isinstance(company_id, bool) or not isinstance(company_id, int):
             raise FinlightValidationError("company_id must be an integer", param="company_id")

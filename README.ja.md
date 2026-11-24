@@ -103,8 +103,8 @@ sources = client.sources.list()
 - 記事 id の導入前に登録された記事はリンクでのみ取得できます。
 - 企業の参照には `entityAccess` 権限が必要です（ない場合は `ForbiddenError`）。
 - 参照系の呼び出しは記事と同じ月間クォータとバースト制限を使います。`companies.search`、`companies.get_many`、
-  `companies.get`、`sources.list` は成功するたびに 1 クレジットかかります（`get_many` は企業ごとではなく 1 回の
-  呼び出しごとに 1）。304 応答（ETag による再検証）とエラーは無料です。
+  `companies.get`、`sources.list` は呼び出しごとに 1 クレジットかかります（`get_many` は企業ごとではなく 1 回の
+  呼び出しごとに 1）。304 応答（ETag による再検証）とエラーも 1 クレジットかかります。
 - `companies.get` は直近のレコードを保持し、ETag で再検証します（`company_cache_size`）。独自の
   `if_none_match=...` を渡すと、304 応答では `None` が返ります。`cache_info(record)` は `etag`、
   `cache_control`、`not_modified` を返します。

@@ -100,9 +100,9 @@ sources = client.sources.list()
 - A miss raises `NotFoundError`; it is never an empty result.
 - Articles indexed before article ids existed can only be fetched by link.
 - Company lookups need the `entityAccess` entitlement (`ForbiddenError` otherwise).
-- Lookups use the same monthly quota and burst limit as articles. Every successful call to
+- Lookups use the same monthly quota and burst limit as articles. Every call to
   `companies.search`, `companies.get_many`, `companies.get` and `sources.list` costs 1 credit
-  (`get_many` costs 1 per call, not per company). A 304 answer (ETag revalidation) and errors are free.
+  (`get_many` costs 1 per call, not per company). A 304 answer (ETag revalidation) and errors cost 1 credit too.
 - `companies.get` keeps the last records and revalidates them with their ETag (`company_cache_size`).
   With your own `if_none_match=...`, a 304 answer returns `None`. `cache_info(record)` gives `etag`,
   `cache_control` and `not_modified`.

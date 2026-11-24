@@ -1,4 +1,4 @@
-"""``client.sources``: list. Each successful call costs 1 credit; errors are free."""
+"""``client.sources``: list. Each call costs 1 credit, errors included."""
 
 from __future__ import annotations
 
@@ -27,8 +27,8 @@ class SourcesService:
     def list(self) -> SourceList:
         """``GET /v3/sources``: the full catalog, sorted by domain.
 
-        Costs 1 credit per successful call (same monthly quota and burst limit as
-        articles); errors are free.
+        Costs 1 credit per call (same monthly quota and burst limit as articles),
+        errors included.
         """
         resp = self._http.call("GET", "/v3/sources")
         body = resp.json()

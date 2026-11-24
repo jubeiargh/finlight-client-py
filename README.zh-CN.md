@@ -101,7 +101,7 @@ sources = client.sources.list()
 - 在文章 id 上线前入库的文章只能通过链接查询。
 - 公司查询需要 `entityAccess` 权限（否则抛出 `ForbiddenError`）。
 - 查询接口与文章使用同一月度配额和突发限制。`companies.search`、`companies.get_many`、`companies.get` 和
-  `sources.list` 每次成功调用消耗 1 个额度（`get_many` 按调用计，不按公司计）。304 响应（ETag 重新验证）和错误免费。
+  `sources.list` 每次调用消耗 1 个额度（`get_many` 按调用计，不按公司计）。304 响应（ETag 重新验证）和错误也消耗 1 个额度。
 - `companies.get` 会保留最近的记录，并用 ETag 重新验证（`company_cache_size`）。若传入自己的
   `if_none_match=...`，304 响应返回 `None`。`cache_info(record)` 提供 `etag`、`cache_control` 和 `not_modified`。
 - `companies.search`、`companies.get_many` 和 `sources.list` 返回带 `skipped` 属性的列表；搜索页的

@@ -102,8 +102,8 @@ sources = client.sources.list()
 - 기사 id 도입 전에 색인된 기사는 링크로만 가져올 수 있습니다.
 - 기업 조회에는 `entityAccess` 권한이 필요합니다(없으면 `ForbiddenError`).
 - 조회는 기사와 같은 월간 할당량과 버스트 제한을 사용합니다. `companies.search`, `companies.get_many`,
-  `companies.get`, `sources.list`는 성공할 때마다 1 크레딧이 듭니다(`get_many`는 기업별이 아니라 호출당 1).
-  304 응답(ETag 재검증)과 오류는 무료입니다.
+  `companies.get`, `sources.list`는 호출마다 1 크레딧이 듭니다(`get_many`는 기업별이 아니라 호출당 1).
+  304 응답(ETag 재검증)과 오류도 1 크레딧이 듭니다.
 - `companies.get`은 최근 레코드를 보관하고 ETag로 다시 검증합니다(`company_cache_size`). 직접
   `if_none_match=...`를 주면 304 응답에서 `None`을 반환합니다. `cache_info(record)`는 `etag`, `cache_control`,
   `not_modified`를 제공합니다.
