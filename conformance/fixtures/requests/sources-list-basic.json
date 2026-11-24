@@ -32,8 +32,8 @@
         },
         {
           "domain": "news.example.com",
-          "name": null,
-          "type": null,
+          "name": "Example News",
+          "type": "financial_media",
           "isDefault": true,
           "isCustom": false,
           "country": "GB",

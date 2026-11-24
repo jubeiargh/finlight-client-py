@@ -49,6 +49,7 @@ exactly one key of the API (`from_` is `from`). Only the arguments you pass are 
 page = client.articles.search(
     query="eventType:mna AND companyCountry:US",
     languages=["en", "de"],
+    source_types=["newswire", "financial_media"],
     from_="2026-11-01",               # str, date, or an aware datetime
     event_types=["mna"],
     min_relevance=0.5,
@@ -74,6 +75,11 @@ Pass `cursor=results.next_cursor` to a new `search_all` with the same arguments 
 can be iterated once. Unknown arguments raise `TypeError`; wrong shapes (for example `limit=0` or
 `languages=[]`) raise `FinlightValidationError` before anything is sent. Values of vocabularies are not
 checked locally, so new server values work without an SDK update.
+
+`source_types` and `exclude_source_types` filter by the type of the source (`SourceType.ALL`, for
+example `SourceType.NEWSWIRE`). Articles from unclassified sources never match `source_types` and are kept
+by `exclude_source_types`. Both only narrow the sources you already get. They exist for search only, not
+for streams.
 
 ## Look up articles, companies and sources
 
@@ -304,6 +310,8 @@ logging.getLogger("finlight_client").setLevel(logging.INFO)
 - Articles tagged before roles existed have `role` and `relevance` `None` and `events` `[]`.
 - `articles.get(id)` answers 404 for articles indexed before ids existed. Use `get_by_link`.
 - `available_at` is `None` on older articles and always `None` on raw streams.
+- `source.type` and `Source.type` are `None` when the source is not classified. Articles indexed before
+  source types existed also have `None`. After a source is reclassified, older articles keep the old type.
 
 ## Migrating from 2.x
 

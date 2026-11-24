@@ -48,6 +48,7 @@ JSON body, every field optional.
 |---|---|---|---|
 | `query` | string | Query language. An unknown field name is a 400. Free text containing `:` must be quoted. | – |
 | `sources`, `optInSources`, `excludeSources` | string[] | Domains. `sources` and `optInSources` cannot be combined. | – |
+| `sourceTypes`, `excludeSourceTypes` | string[] | `vocab.json` `request.sourceTypes`. Articles of unclassified sources (`source.type` null) never match `sourceTypes` and are kept by `excludeSourceTypes`. Both filter inside the source pool and never add a source to it. | – |
 | `from`, `to` | string | ISO 8601 (send UTC with milliseconds). Bounds on the `orderBy` timestamp. | `to` = now |
 | `languages` | string[] | ISO 639-1, non-empty (`[]` is a 400). | `["en"]` |
 | `tickers` | string[] | `SYMBOL`, `SYMBOL@MIC`, vendor notations (`000660.KS`, `NASDAQ:AAPL`). | – |
@@ -101,7 +102,7 @@ Response 200: `{"articles": Article[], "pagination": {"limit", "returned", "hasM
 |---|---|---|---|
 | `id` | string | always | 22 characters, base64url alphabet. Same in every channel, derived from the link. Opaque. |
 | `link` | string | always | |
-| `source` | object | always | `{domain: string, type: string\|null}`. `type` is null today. |
+| `source` | object | always | `{domain: string, type: string\|null}`. `type` is the source type (open enum, `vocab.json` `response.sourceTypes`) when the article was indexed. It can lag `type` in `/v3/sources` after a reclassification. Null when the source is not classified or the article was indexed before source types existed. |
 | `title` | string | always | Original-language title. |
 | `summary` | string\|null | always | Never `""`: an empty or whitespace-only summary is delivered as `null`. |
 | `language` | string\|null | always | ISO 639-1. |
@@ -151,7 +152,8 @@ The company endpoints are not metered.
 
 No parameters, not metered. 200 `{"sources": Source[]}`, sorted by domain.
 Source: `{domain, name: string|null, type: string|null, isDefault: boolean, isCustom: boolean, country: string|null,
-languages: string[], hasContent?: boolean}`. `hasContent` is present only with full-article access; absent means
+languages: string[], hasContent?: boolean}`. `type` is the source type (open enum, `vocab.json` `response.sourceTypes`), null when not
+classified. `hasContent` is present only with full-article access; absent means
 "not entitled to know", never "no content". Custom sources appear only when granted to the subscription.
 
 ### 2.8 Errors (RFC 9457)
@@ -172,7 +174,8 @@ languages: string[], hasContent?: boolean}`. `hasContent` is present only with f
 - `errors[]` appears for validation and cursor errors. `field` names the request field (a path such as `a.b` or
   `list[0]` where the server reports one; see the error fixtures for the exact values). `issue` is a human-readable
   text, not a stable value. `allowedValues` appears for the closed vocabularies (`include`, `orderBy`, `order`,
-  `roles`, `eventTypes`, `eventDirections`, `minImportance`). A query-language error names the field `badQuery`.
+  `roles`, `eventTypes`, `eventDirections`, `minImportance`, `sourceTypes`, `excludeSourceTypes`). A
+  query-language error names the field `badQuery`.
 
 | `code` | HTTP | When |
 |---|---|---|
@@ -228,7 +231,7 @@ Send the subscribe message as a JSON object without an `action` key. It is v3 on
 (JSON integer).
 
 Enriched: `payloadVersion`, `include` (`content`, `companies`, `events`), `query` (lenient grammar: unknown fields
-fall back to full text), `sources`, `excludeSources`, `optInSources`, `language` (one language, default `en`),
+fall back to full text; a known field with an unknown value, e.g. `sourceType:wire`, is rejected), `sources`, `excludeSources`, `optInSources`, `language` (one language, default `en`),
 `tickers`, `countries`, `categories`, `excludeEmptyContent`, `includeUpdates` (without it no `article.updated` is
 delivered), `clientNonce`. Unknown keys are dropped silently. `includeContent`, `includeEntities` and `extended` are
 forbidden with v3: `connection.error` `VALIDATION_FAILED`, then the connection is closed.

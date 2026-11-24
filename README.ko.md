@@ -51,6 +51,7 @@ REST 호출은 동기 방식이고, 스트림은 비동기 이터레이터입니
 page = client.articles.search(
     query="eventType:mna AND companyCountry:US",
     languages=["en", "de"],
+    source_types=["newswire", "financial_media"],
     from_="2026-11-01",               # str, date, or an aware datetime
     event_types=["mna"],
     min_relevance=0.5,
@@ -76,6 +77,10 @@ if results.truncated:
 결과는 한 번만 순회할 수 있습니다. 알 수 없는 인자는 `TypeError`가 되고, 형식 오류(예: `limit=0`,
 `languages=[]`)는 전송 전에 `FinlightValidationError`가 됩니다. 어휘 값은 로컬에서 검사하지 않으므로
 서버에 새 값이 추가되어도 SDK를 업데이트하지 않고 사용할 수 있습니다.
+
+`source_types`와 `exclude_source_types`는 소스 유형으로 거릅니다(`SourceType.ALL`, 예: `SourceType.NEWSWIRE`).
+분류되지 않은 소스의 기사는 `source_types`에 일치하지 않고, `exclude_source_types`에서는 남습니다.
+둘 다 이미 받을 수 있는 소스를 좁히기만 합니다. 검색 전용이며 스트림에는 없습니다.
 
 ## 기사, 기업, 소스 조회
 
@@ -303,6 +308,8 @@ logging.getLogger("finlight_client").setLevel(logging.INFO)
 - 역할 기능 이전에 태깅된 기사는 `role`과 `relevance`가 `None`, `events`가 `[]`입니다.
 - id 도입 전에 색인된 기사는 `articles.get(id)`가 404를 반환합니다. `get_by_link`를 사용하세요.
 - 오래된 기사의 `available_at`은 `None`이며, raw 스트림에서는 항상 `None`입니다.
+- `source.type`과 `Source.type`은 소스가 분류되지 않았으면 `None`입니다. 소스 유형이 생기기 전에 색인된
+  기사도 `None`입니다. 소스가 다시 분류되어도 오래된 기사는 이전 유형을 유지합니다.
 
 ## 2.x에서 마이그레이션
 

@@ -25,7 +25,7 @@
           "link": "https://news.example.com/pages/2026/11/item-1",
           "source": {
             "domain": "news.example.com",
-            "type": null
+            "type": "financial_media"
           },
           "title": "Synthetic page item 1",
           "summary": "Synthetic summary 1.",
@@ -51,7 +51,7 @@
           "link": "https://news.example.com/pages/2026/11/item-2",
           "source": {
             "domain": "news.example.com",
-            "type": null
+            "type": "financial_media"
           },
           "title": "Synthetic page item 2",
           "summary": "Synthetic summary 2.",
@@ -77,7 +77,7 @@
           "link": "https://news.example.com/pages/2026/11/item-3",
           "source": {
             "domain": "news.example.com",
-            "type": null
+            "type": "financial_media"
           },
           "title": "Synthetic page item 3",
           "summary": "Synthetic summary 3.",
@@ -103,7 +103,7 @@
           "link": "https://news.example.com/pages/2026/11/item-4",
           "source": {
             "domain": "news.example.com",
-            "type": null
+            "type": "financial_media"
           },
           "title": "Synthetic page item 4",
           "summary": "Synthetic summary 4.",
@@ -129,7 +129,7 @@
           "link": "https://news.example.com/pages/2026/11/item-5",
           "source": {
             "domain": "news.example.com",
-            "type": null
+            "type": "financial_media"
           },
           "title": "Synthetic page item 5",
           "summary": "Synthetic summary 5.",

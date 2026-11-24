@@ -6,7 +6,7 @@
 v3 webhooks). Code written for 2.x does not run unchanged. To stay on 2.x, pin `finlight-client<3`.
 Migration guide: https://docs.finlight.me/migration/v2-to-v3
 
-Contract kit: 3.0.0-rc.3.
+Contract kit: 3.0.0-rc.4.
 
 ### Removed
 
@@ -47,8 +47,12 @@ Contract kit: 3.0.0-rc.3.
   A monthly 429 fails at once on REST, also inside `search_all`.
   A burst 429 waits exactly `Retry-After` (10 s without it) and retries once.
   This is on by default (`retry_on_burst="once"`); set `retry_on_burst="off"` to turn it off.
-- Vocabulary constants (`EventType`, `CompanyRole`, `IncludeBlock`, `SortOrder`, `RateLimitType`, ...) as
-  plain strings; unknown values are kept.
+- `articles.search` and `articles.search_all` take `source_types` and `exclude_source_types`
+  (`sourceTypes`, `excludeSourceTypes`). Streams do not take them.
+- Vocabulary constants (`EventType`, `CompanyRole`, `IncludeBlock`, `SortOrder`, `SourceType`,
+  `RateLimitType`, ...) as plain strings; unknown values are kept. `SourceType` has 7 values: `newswire`,
+  `press_release`, `financial_media`, `general_media`, `aggregator`, `blog`, `government`.
+  `source.type` and `Source.type` are `None` when the source is not classified.
 - `py.typed`, `User-Agent: finlight-client-python/3.0.0` and `x-client-version` on every request.
 - Conformance suite: the shared API v3 contract kit runs in pytest (`CONFORMANCE.md`).
 

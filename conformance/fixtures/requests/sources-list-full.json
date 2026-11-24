@@ -33,8 +33,8 @@
         },
         {
           "domain": "custom.example.net",
-          "name": null,
-          "type": null,
+          "name": "Example Custom Blog",
+          "type": "blog",
           "isDefault": false,
           "isCustom": true,
           "country": "US",
@@ -45,8 +45,8 @@
         },
         {
           "domain": "news.example.com",
-          "name": null,
-          "type": null,
+          "name": "Example News",
+          "type": "financial_media",
           "isDefault": true,
           "isCustom": false,
           "country": "GB",

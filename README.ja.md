@@ -52,6 +52,7 @@ REST 呼び出しは同期、ストリームは非同期イテレーターです
 page = client.articles.search(
     query="eventType:mna AND companyCountry:US",
     languages=["en", "de"],
+    source_types=["newswire", "financial_media"],
     from_="2026-11-01",               # str, date, or an aware datetime
     event_types=["mna"],
     min_relevance=0.5,
@@ -77,6 +78,10 @@ if results.truncated:
 結果は 1 回だけ反復できます。未知の引数は `TypeError` になり、形式の誤り（例：`limit=0`、`languages=[]`）は
 送信前に `FinlightValidationError` になります。語彙の値はローカルで検査しないため、サーバー側で追加された値も
 SDK を更新せずに使えます。
+
+`source_types` と `exclude_source_types` はソースの種類で絞り込みます（`SourceType.ALL`、例：
+`SourceType.NEWSWIRE`）。種類が未分類のソースの記事は `source_types` に一致せず、`exclude_source_types` では
+残ります。どちらも受け取れるソースを狭めるだけです。検索専用で、ストリームでは使えません。
 
 ## 記事・企業・ソースの参照
 
@@ -305,6 +310,8 @@ logging.getLogger("finlight_client").setLevel(logging.INFO)
 - ロール機能より前にタグ付けされた記事は、`role` と `relevance` が `None`、`events` が `[]` です。
 - id 導入前に登録された記事では `articles.get(id)` が 404 になります。`get_by_link` を使ってください。
 - 古い記事の `available_at` は `None`、raw ストリームでは常に `None` です。
+- `source.type` と `Source.type` は、ソースが未分類なら `None` です。ソースの種類が導入される前に索引された記事も
+  `None` です。ソースが再分類されても、古い記事は以前の種類のままです。
 
 ## 2.x からの移行
 

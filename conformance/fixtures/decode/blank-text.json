@@ -18,7 +18,7 @@
     "link": "https://news.example.com/markets/2026/09/19/example-robotics-blank-text",
     "source": {
       "domain": "news.example.com",
-      "type": null
+      "type": "financial_media"
     },
     "title": "Example Robotics agrees to acquire Sample Sensors",
     "summary": null,
@@ -106,7 +106,7 @@
       "companies": "value",
       "events": "value",
       "source.domain": "value",
-      "source.type": "null",
+      "source.type": "value",
       "sentiment.label": "value",
       "sentiment.confidence": "value",
       "companies[0].companyId": "value",

@@ -41,7 +41,8 @@ def test_vocab(case: str) -> None:
     assert list(EventDirection.ALL) == req["eventDirections"]["values"] == resp["eventDirections"]["values"]
     assert list(Importance.ALL) == req["minImportance"]["values"] == resp["importance"]["values"]
     assert list(SentimentLabel.ALL) == resp["sentimentLabels"]["values"]
-    assert list(SourceType.ALL) == resp["sourceTypes"]["values"]
+    assert list(SourceType.ALL) == req["sourceTypes"]["values"] == resp["sourceTypes"]["values"]
+    assert list(SourceType.ALL) == req["excludeSourceTypes"]["values"]
 
     assert list(StreamEventName.ALL) == ws["events"]["values"]
     assert list(StreamEventName.ARTICLE_EVENTS) == ws["articleEvents"]["values"]
@@ -63,3 +64,5 @@ def test_vocab(case: str) -> None:
     article = decode_article(wire)
     assert article.events[0].type == "esg_controversy"
     assert article.events[0].type not in EventType.ALL
+    assert article.source.type == "wire_service"
+    assert article.source.type not in SourceType.ALL

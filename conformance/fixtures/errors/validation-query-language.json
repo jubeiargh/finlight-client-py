@@ -27,7 +27,7 @@
       "errors": [
         {
           "field": "badQuery",
-          "issue": "Unknown field \"colour\". Allowed fields: category, companyCount, companyCountry, companyId, content, country, eventConfidence, eventCount, eventDirection, eventImportance, eventType, exchange, isin, openfigi, optInSources, publishedAt, relevance, role, sector, sentiment, source, summary, ticker, title. To search for the literal text, quote it: \"colour:blue\"."
+          "issue": "Unknown field \"colour\". Allowed fields: category, companyCount, companyCountry, companyId, content, country, eventConfidence, eventCount, eventDirection, eventImportance, eventType, exchange, isin, openfigi, optInSources, publishedAt, relevance, role, sector, sentiment, source, sourceType, summary, ticker, title. To search for the literal text, quote it: \"colour:blue\"."
         }
       ]
     }

@@ -141,9 +141,28 @@ class SentimentLabel:
 
 
 class SourceType:
-    """``source.type`` is always ``None`` today; values will be added later."""
+    """``source.type`` of an article and ``type`` of a ``/v3/sources`` entry.
 
-    ALL: tuple[str, ...] = ()
+    The field is ``None`` when the source is not classified. Also the values for
+    the ``source_types`` and ``exclude_source_types`` search arguments.
+    """
+
+    NEWSWIRE = "newswire"
+    PRESS_RELEASE = "press_release"
+    FINANCIAL_MEDIA = "financial_media"
+    GENERAL_MEDIA = "general_media"
+    AGGREGATOR = "aggregator"
+    BLOG = "blog"
+    GOVERNMENT = "government"
+    ALL = (
+        NEWSWIRE,
+        PRESS_RELEASE,
+        FINANCIAL_MEDIA,
+        GENERAL_MEDIA,
+        AGGREGATOR,
+        BLOG,
+        GOVERNMENT,
+    )
 
 
 class StreamEventName:

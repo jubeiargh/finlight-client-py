@@ -66,7 +66,7 @@
           "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
           "source": {
             "domain": "news.example.com",
-            "type": null
+            "type": "financial_media"
           },
           "title": "Example Robotics agrees to acquire Sample Sensors",
           "summary": "Synthetic summary written for the finlight contract kit.",

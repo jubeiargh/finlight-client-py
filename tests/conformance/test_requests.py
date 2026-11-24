@@ -91,6 +91,9 @@ def test_request(case: str, path: Path, httpserver: Any, make_client: Any) -> No
     elif case == "R-02":
         assert [a.id for a in result.articles] == [a["id"] for a in body["articles"]]
         assert result.articles[0].companies_present and result.articles[0].content_present
+        sent = json.loads(request.get_data())
+        assert sent["sourceTypes"] == ["newswire", "financial_media"]
+        assert sent["excludeSourceTypes"] == ["press_release"]
     elif case in ("R-04", "R-05"):
         assert result.id == body["article"]["id"]
         assert set(result.model_fields_set) >= {"id", "link"}
@@ -114,6 +117,7 @@ def test_request(case: str, path: Path, httpserver: Any, make_client: Any) -> No
         assert all(s.has_content is not None for s in result)
         assert {s.domain: s.is_custom for s in result}["custom.example.net"] is True
         assert result[1].is_default is False and result[2].is_default is True
+        assert [s.type for s in result] == [s["type"] for s in body["sources"]]
     elif case == "R-11":
         assert all(s.has_content is None for s in result)
         assert all("has_content" not in s.model_fields_set for s in result)

@@ -68,6 +68,18 @@ def test_unknown_keyword_names_the_key(offline: FinlightClient) -> None:
             call(event_type=["mna"])
 
 
+def test_source_types_are_search_only(offline: FinlightClient) -> None:
+    for call in (offline.stream, offline.raw_stream):
+        for name in ("source_types", "exclude_source_types"):
+            with pytest.raises(TypeError, match=name):
+                call(**{name: ["newswire"]})
+
+
+def test_source_types_are_sent(httpserver: Any, make_client: Any) -> None:
+    body = json.loads(body_for(httpserver, make_client, source_types=["newswire"], exclude_source_types=["blog"]))
+    assert body == {"sourceTypes": ["newswire"], "excludeSourceTypes": ["blog"]}
+
+
 def test_values_of_vocabularies_are_not_checked(httpserver: Any, make_client: Any) -> None:
     httpserver.expect_request("/v3/articles/search").respond_with_json(
         {"articles": [], "pagination": {"limit": 20, "returned": 0, "hasMore": False, "nextCursor": None}}

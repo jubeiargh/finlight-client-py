@@ -51,6 +51,7 @@ REST 调用是同步的，实时流是异步迭代器。参数使用 snake_case�
 page = client.articles.search(
     query="eventType:mna AND companyCountry:US",
     languages=["en", "de"],
+    source_types=["newswire", "financial_media"],
     from_="2026-11-01",               # str, date, or an aware datetime
     event_types=["mna"],
     min_relevance=0.5,
@@ -75,6 +76,10 @@ if results.truncated:
 用相同参数加上 `cursor=results.next_cursor` 再调用一次 `search_all` 即可继续。结果只能遍历一次。
 未知参数会抛出 `TypeError`；形式错误（例如 `limit=0` 或 `languages=[]`）会在发送前抛出
 `FinlightValidationError`。词表取值不在本地检查，因此服务器新增的取值无需更新 SDK 即可使用。
+
+`source_types` 和 `exclude_source_types` 按来源类型筛选（`SourceType.ALL`，例如 `SourceType.NEWSWIRE`）。
+未分类来源的文章不会匹配 `source_types`，在 `exclude_source_types` 下会保留。两者只会缩小你已能获取的来源范围。
+仅用于搜索，不用于流。
 
 ## 查询文章、公司和来源
 
@@ -297,6 +302,8 @@ logging.getLogger("finlight_client").setLevel(logging.INFO)
 - 在角色功能上线前打标签的文章，`role` 和 `relevance` 为 `None`，`events` 为 `[]`。
 - 在 id 功能上线前入库的文章，`articles.get(id)` 返回 404。请使用 `get_by_link`。
 - 旧文章的 `available_at` 为 `None`，raw 流中始终为 `None`。
+- 来源未分类时，`source.type` 和 `Source.type` 为 `None`。来源类型出现之前索引的文章也为 `None`。
+  来源重新分类后，旧文章保留原来的类型。
 
 ## 从 2.x 迁移
 

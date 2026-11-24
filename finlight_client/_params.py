@@ -23,6 +23,8 @@ SEARCH_FIELDS: tuple[tuple[str, str, str], ...] = (
     ("sources", "sources", "strlist"),
     ("opt_in_sources", "optInSources", "strlist"),
     ("exclude_sources", "excludeSources", "strlist"),
+    ("source_types", "sourceTypes", "strlist"),
+    ("exclude_source_types", "excludeSourceTypes", "strlist"),
     ("from_", "from", "time"),
     ("to", "to", "time"),
     ("languages", "languages", "languages"),

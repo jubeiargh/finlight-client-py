@@ -83,6 +83,30 @@
       "closed": true,
       "ordinal": true
     },
+    "sourceTypes": {
+      "values": [
+        "newswire",
+        "press_release",
+        "financial_media",
+        "general_media",
+        "aggregator",
+        "blog",
+        "government"
+      ],
+      "closed": true
+    },
+    "excludeSourceTypes": {
+      "values": [
+        "newswire",
+        "press_release",
+        "financial_media",
+        "general_media",
+        "aggregator",
+        "blog",
+        "government"
+      ],
+      "closed": true
+    },
     "limit": {
       "min": 1,
       "max": 100,
@@ -158,9 +182,17 @@
       "open": true
     },
     "sourceTypes": {
-      "values": [],
+      "values": [
+        "newswire",
+        "press_release",
+        "financial_media",
+        "general_media",
+        "aggregator",
+        "blog",
+        "government"
+      ],
       "open": true,
-      "note": "always null today"
+      "note": "source.type and /v3/sources type; null when unclassified"
     }
   },
   "websocket": {
