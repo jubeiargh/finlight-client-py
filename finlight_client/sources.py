@@ -1,4 +1,4 @@
-"""``client.sources``: list."""
+"""``client.sources``: list. Each successful call costs 1 credit; errors are free."""
 
 from __future__ import annotations
 
@@ -25,7 +25,11 @@ class SourcesService:
         self._http = http
 
     def list(self) -> SourceList:
-        """``GET /v3/sources``: the full catalog, sorted by domain."""
+        """``GET /v3/sources``: the full catalog, sorted by domain.
+
+        Costs 1 credit per successful call (same monthly quota and burst limit as
+        articles); errors are free.
+        """
         resp = self._http.call("GET", "/v3/sources")
         body = resp.json()
         if not isinstance(body, dict):

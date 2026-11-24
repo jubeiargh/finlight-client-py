@@ -6,7 +6,7 @@
 v3 webhooks). Code written for 2.x does not run unchanged. To stay on 2.x, pin `finlight-client<3`.
 Migration guide: https://docs.finlight.me/migration/v2-to-v3
 
-Contract kit: 3.0.0-rc.4.
+Contract kit: 3.0.0-rc.5.
 
 ### Removed
 
@@ -21,6 +21,8 @@ Contract kit: 3.0.0-rc.4.
   (`SearchAllResult`), `articles.get`, `articles.get_by_link`, `companies.search`, `companies.get_many`,
   `companies.get` (ETag revalidation, `cache_info(record)`) and `sources.list`. Lists carry `skipped`
   (`SkippedEntry`) for entries that could not be read.
+  Lookups (`companies.*`, `sources.list`) cost 1 credit per successful call from the same monthly quota
+  and burst limit as articles (`get_many` 1 per call); a 304 answer and errors are free.
 - `client.stream(...)` and `client.raw_stream(...)` return a `FinlightStream` (async iterator of
   `StreamEvent`): ping and pong watchdog, rotation before the 2 hour limit, the same subscribe after every
   reconnect, duplicate filter, `takeover` option, typed terminal errors (`PreemptedError`).

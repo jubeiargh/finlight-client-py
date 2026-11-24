@@ -28,13 +28,20 @@ this text and a fixture disagree; `conformance.md` lists the cases every client 
 - Auth: `X-API-KEY: <key>`. Missing or invalid key: 401 `UNAUTHORIZED`.
 - Success is `application/json`. Errors from the v3 routes are `application/problem+json` (2.8).
 - Metering and throttling apply to the article endpoints (`/v3/articles/search`, `/v3/articles/{id}`,
-  `/v3/articles/by-link`):
+  `/v3/articles/by-link`) and to the lookups (`/v3/companies`, `/v3/companies/{companyId}`, `/v3/sources`).
+  All of them draw on the same monthly quota and the same burst limit:
+  - An article request costs 1 credit.
+  - A lookup costs 1 credit per successful (2xx) request, `ids=` with several companies included. A 304 Not
+    Modified (`If-None-Match` matches the `ETag` of the answer) and every error answer, both 429s included, are
+    free. A 304 still counts toward the burst limit.
+  - Every lookup answer carries an `ETag` (the company record its own, 2.6; the other lookups a weak `W/"..."`
+    over the body). Sending it back as `If-None-Match` answers 304 with an empty body while nothing changed.
   - Monthly quota exhausted: 429 `RATE_LIMITED` with `"limitType": "monthly"` and no `Retry-After`.
   - Burst limit: 429 `RATE_LIMITED` with `"limitType": "burst"` and a `Retry-After` header in seconds (the rest
     of the 10-second window, 1 to 10).
   - Tell the two apart by `limitType`, not by `detail` (the text is not stable). `limitType` is an open list: an
     unknown value is kept as a string and not retried. There are no other rate-limit headers.
-  - A request that fails validation has already been counted.
+  - An article request that fails validation has already been counted; a lookup that fails is not.
 - `X-Request-Id`: when sent, it is echoed as `requestId` in error bodies. Without it the server generates
   `req_<uuid>`. It is not returned as a response header.
 - Unknown request fields (body or query) are **removed silently**, not rejected. Enum values are validated
@@ -146,11 +153,11 @@ primaryListing: {ticker, mic, country}|null, listings: {ticker, mic, country, ac
 other exchange the server picks one listing (active before expired, then the primary's symbol, then the shortest).
 Expired listings appear (`active: false`) where they are the only one on their exchange.
 
-The company endpoints are not metered.
+Each successful company request costs 1 credit (2.1); a 304 and errors are free. A 429 is possible here.
 
 ### 2.7 `GET /v3/sources`
 
-No parameters, not metered. 200 `{"sources": Source[]}`, sorted by domain.
+No parameters. Costs 1 credit per successful request (2.1); a 429 is possible here. 200 `{"sources": Source[]}`, sorted by domain.
 Source: `{domain, name: string|null, type: string|null, isDefault: boolean, isCustom: boolean, country: string|null,
 languages: string[], hasContent?: boolean}`. `type` is the source type (open enum, `vocab.json` `response.sourceTypes`), null when not
 classified. `hasContent` is present only with full-article access; absent means

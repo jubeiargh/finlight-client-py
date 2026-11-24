@@ -1,4 +1,9 @@
-"""``client.companies``: search, get_many, get (needs ``entityAccess``)."""
+"""``client.companies``: search, get_many, get (needs ``entityAccess``).
+
+Every successful call costs 1 credit (same monthly quota and burst limit as
+articles; ``get_many`` costs 1 per call, not per company). A 304 answer to an
+ETag revalidation and errors are free.
+"""
 
 from __future__ import annotations
 
@@ -54,7 +59,10 @@ class CompaniesService:
         self._cache = _EtagCache(cache_size)
 
     def search(self, q: str, *, mic: Optional[str] = None) -> CompanyList:
-        """Resolve a ticker, name, ISIN or vendor notation (at most 10 results, no pages)."""
+        """Resolve a ticker, name, ISIN or vendor notation (at most 10 results, no pages).
+
+        Costs 1 credit per successful call; errors are free.
+        """
         if not isinstance(q, str):
             raise FinlightValidationError("q must be a string", param="q")
         if len(q) > 200:
@@ -70,7 +78,10 @@ class CompaniesService:
         return _company_list(resp.json())
 
     def get_many(self, ids: Sequence[int]) -> CompanyList:
-        """Resolve 1 to 10 company ids. Unknown ids are left out; order is not guaranteed."""
+        """Resolve 1 to 10 company ids. Unknown ids are left out; order is not guaranteed.
+
+        Costs 1 credit per successful call, however many ids; errors are free.
+        """
         checked = company_ids(ids)
         resp = self._http.call("GET", "/v3/companies", query=[("ids", ",".join(str(i) for i in checked))])
         return _company_list(resp.json())
@@ -89,6 +100,8 @@ class CompaniesService:
         returns the kept record. With ``if_none_match`` you manage the cache: a 304 answer
         returns ``None`` ("not modified"). ``cache_info(record)`` gives the ETag and
         Cache-Control of a record.
+
+        A 200 answer costs 1 credit; a 304 answer (revalidation) and errors are free.
         """
         if isinstance(company_id, bool) or not isinstance(company_id, int):
             raise FinlightValidationError("company_id must be an integer", param="company_id")
