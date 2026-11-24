@@ -91,8 +91,9 @@ article = client.articles.get_by_link("https://www.reuters.com/...")
 
 companies = client.companies.search("NVDA", mic="XNAS")   # at most 10, no pages
 companies = client.companies.get_many([4821, 1001])
-company = client.companies.get(4821)                      # revalidated with its ETag next time
-print(cache_info(company))
+company = client.companies.get(4821)                      # the SDK keeps no cache
+info = cache_info(company)                                # etag, cache_control
+again = client.companies.get(4821, if_none_match=info.etag)  # None on 304 (not modified)
 
 sources = client.sources.list()
 ```
@@ -103,9 +104,11 @@ sources = client.sources.list()
 - Lookups use the same monthly quota and burst limit as articles. Every call to
   `companies.search`, `companies.get_many`, `companies.get` and `sources.list` costs 1 credit
   (`get_many` costs 1 per call, not per company). A 304 answer (ETag revalidation) and errors cost 1 credit too.
-- `companies.get` keeps the last records and revalidates them with their ETag (`company_cache_size`).
-  With your own `if_none_match=...`, a 304 answer returns `None`. `cache_info(record)` gives `etag`,
-  `cache_control` and `not_modified`.
+- The SDK keeps no cache of company records; every call goes to the server. To save credits, keep the
+  records yourself and do not call again within the `max-age` of their Cache-Control (important company
+  fields already come with each article). `cache_info(record)` gives `etag` and `cache_control`. Pass the
+  ETag back as `if_none_match=...` to revalidate: a 304 answer returns `None`. That saves the download, not
+  the credit. Without `if_none_match` no `If-None-Match` is sent.
 - `companies.search`, `companies.get_many` and `sources.list` return lists with a `skipped` attribute;
   `ArticlePage.skipped` does the same for search pages. Entries that cannot be read land there.
 
@@ -273,7 +276,6 @@ All keys can be set as keyword arguments or through `FinlightConfig` (`config=`)
 | `burst_wait` | 10 | burst wait when `Retry-After` is missing |
 | `max_pages` | 10 | page cap of `search_all` |
 | `max_response_bytes` | 32 MiB | size limit of a REST answer |
-| `company_cache_size` | 256 | records kept by `companies.get`, 0 turns it off |
 | `ping_interval` | 25 | stream ping |
 | `watchdog_timeout` | 60 | reconnect when no pong came for this long |
 | `rotation_interval` | 6900 (115 min) | fresh connection before the 2 h limit |

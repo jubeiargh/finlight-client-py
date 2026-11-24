@@ -91,8 +91,9 @@ article = client.articles.get_by_link("https://www.reuters.com/...")
 
 companies = client.companies.search("NVDA", mic="XNAS")   # at most 10, no pages
 companies = client.companies.get_many([4821, 1001])
-company = client.companies.get(4821)                      # revalidated with its ETag next time
-print(cache_info(company))
+company = client.companies.get(4821)                      # the SDK keeps no cache
+info = cache_info(company)                                # etag, cache_control
+again = client.companies.get(4821, if_none_match=info.etag)  # None on 304 (not modified)
 
 sources = client.sources.list()
 ```
@@ -102,8 +103,10 @@ sources = client.sources.list()
 - 公司查询需要 `entityAccess` 权限（否则抛出 `ForbiddenError`）。
 - 查询接口与文章使用同一月度配额和突发限制。`companies.search`、`companies.get_many`、`companies.get` 和
   `sources.list` 每次调用消耗 1 个额度（`get_many` 按调用计，不按公司计）。304 响应（ETag 重新验证）和错误也消耗 1 个额度。
-- `companies.get` 会保留最近的记录，并用 ETag 重新验证（`company_cache_size`）。若传入自己的
-  `if_none_match=...`，304 响应返回 `None`。`cache_info(record)` 提供 `etag`、`cache_control` 和 `not_modified`。
+- SDK 不缓存公司记录，每次调用都会请求服务器。想节省额度，请自行保存记录，并在 Cache-Control 的
+  `max-age` 内不再调用（重要的公司字段已随每篇文章提供）。`cache_info(record)` 提供 `etag` 和 `cache_control`。
+  将 ETag 作为 `if_none_match=...` 传回即可重新验证：304 响应返回 `None`。这样省下的是下载，不是额度。
+  不传 `if_none_match` 时不会发送 `If-None-Match`。
 - `companies.search`、`companies.get_many` 和 `sources.list` 返回带 `skipped` 属性的列表；搜索页的
   `ArticlePage.skipped` 同理。无法读取的条目会放在那里。
 
@@ -267,7 +270,6 @@ client = FinlightClient(
 | `burst_wait` | 10 | 缺少 `Retry-After` 时的 burst 等待 |
 | `max_pages` | 10 | `search_all` 的页数上限 |
 | `max_response_bytes` | 32 MiB | REST 响应的大小上限 |
-| `company_cache_size` | 256 | `companies.get` 保留的记录数，0 表示关闭 |
 | `ping_interval` | 25 | 流的 ping 间隔 |
 | `watchdog_timeout` | 60 | 超过该时间未收到 pong 即重连 |
 | `rotation_interval` | 6900（115 分钟） | 在 2 小时上限前建立新连接 |

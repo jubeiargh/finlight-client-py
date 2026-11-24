@@ -112,9 +112,9 @@ def test_companies(client: FinlightClient) -> None:
     assert matches
     record = client.companies.get(matches[0].company_id)
     info = cache_info(record)
-    assert info is not None and info.etag and not info.not_modified
-    again = client.companies.get(matches[0].company_id)  # revalidated with the ETag
-    assert again.company_id == record.company_id
+    assert info is not None and info.etag
+    again = client.companies.get(matches[0].company_id, if_none_match=info.etag)  # caller revalidates
+    assert again is None or again.company_id == record.company_id
     mics = [listing.mic for listing in record.listings]
     assert len(mics) == len(set(mics)), "listings name each exchange at most once (contract rc.2)"
     if record.primary_listing is not None and record.listings:

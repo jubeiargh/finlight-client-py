@@ -155,6 +155,11 @@ Expired listings appear (`active: false`) where they are the only one on their e
 
 Each company request costs 1 credit (2.1), a 304 and errors included. A 429 is possible here.
 
+Clients keep no cache of company records. `companies.get` sends `If-None-Match` only with an ETag the caller
+passes in (`ifNoneMatch`) and returns "not modified" on a 304. Callers who want to save credits keep the records
+themselves and do not call again within `max-age`; revalidating with `If-None-Match` saves the download, not the
+credit.
+
 ### 2.7 `GET /v3/sources`
 
 No parameters. Each request costs 1 credit (2.1), a 304 and errors included; a 429 is possible here. 200 `{"sources": Source[]}`, sorted by domain.

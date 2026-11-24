@@ -104,15 +104,17 @@ def test_request(case: str, path: Path, httpserver: Any, make_client: Any) -> No
             assert private.primary_listing is None and private.listings == [] and private.isins == []
     elif case == "R-08":
         assert isinstance(result, CompanyRecord)
+        assert "If-None-Match" not in request.headers  # no caller if_none_match, no SDK cache
         info = cache_info(result)
-        assert info is not None and not info.not_modified
+        assert info is not None
         assert info.etag == fx["response"]["headers"]["etag"]
         assert info.cache_control == fx["response"]["headers"]["cache-control"]
         mics = [listing.mic for listing in result.listings]
         assert len(mics) == len(set(mics))
         assert result.listings[0].mic == result.primary_listing.mic
     elif case == "R-09":
-        assert result is None  # 304 with a caller-managed ETag: not modified
+        assert request.headers.get("If-None-Match") == fx["sdk"]["args"]["ifNoneMatch"]
+        assert result is None  # 304 with the caller's ETag: not modified
     elif case == "R-10":
         assert all(s.has_content is not None for s in result)
         assert {s.domain: s.is_custom for s in result}["custom.example.net"] is True
@@ -135,17 +137,28 @@ def test_r02_native_datetimes_serialize_like_the_kit(httpserver: Any, make_clien
     assert json.loads(httpserver.log[0][0].get_data()) == fx["request"]["body"]
 
 
-def test_r09_client_cache_serves_record_on_304(httpserver: Any, make_client: Any) -> None:
+def test_r08_sdk_keeps_no_company_cache(httpserver: Any, make_client: Any) -> None:
+    ok = load("fixtures/requests/companies-get.json")
+    client = make_client()
+    serve(httpserver, ok)
+    first = client.companies.get(900001)
+    second = client.companies.get(900001)
+    assert len(httpserver.log) == 2
+    assert all("If-None-Match" not in req.headers for req, _ in httpserver.log)
+    assert second is not first and second == first
+
+
+def test_r09_caller_revalidates_with_the_etag_of_cache_info(httpserver: Any, make_client: Any) -> None:
     ok = load("fixtures/requests/companies-get.json")
     nm = load("fixtures/requests/companies-get-not-modified.json")
     client = make_client()
     serve(httpserver, ok)
-    first = client.companies.get(900001)
+    info = cache_info(client.companies.get(900001))
+    assert info is not None and info.etag
     httpserver.clear()
     serve(httpserver, nm)
-    second = client.companies.get(900001)
-    assert httpserver.log[0][0].headers.get("If-None-Match") == ok["response"]["headers"]["etag"]
-    assert second is first and cache_info(second).not_modified
+    assert client.companies.get(900001, if_none_match=info.etag) is None
+    assert httpserver.log[0][0].headers.get("If-None-Match") == info.etag
 
 
 def test_kit_files_present() -> None:

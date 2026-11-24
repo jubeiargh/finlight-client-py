@@ -6,7 +6,7 @@
 v3 webhooks). Code written for 2.x does not run unchanged. To stay on 2.x, pin `finlight-client<3`.
 Migration guide: https://docs.finlight.me/migration/v2-to-v3
 
-Contract kit: 3.0.0-rc.5.
+Contract kit: 3.0.0-rc.6.
 
 ### Removed
 
@@ -14,15 +14,22 @@ Contract kit: 3.0.0-rc.5.
   `WebSocketClient`, `RawWebSocketClient`, `WebhookService`, the v2 models and parameter classes.
 - `setup.py` (the package is built from `pyproject.toml`).
 - Python 3.7 to 3.9.
+- Since the release candidate for contract kit 3.0.0-rc.6: the SDK's own company cache.
+  `FinlightConfig.company_cache_size` and `CacheInfo.not_modified` are gone; `companies.get` no longer
+  keeps records or revalidates them on its own. `cache_info(record)` (`etag`, `cache_control`) and the
+  `if_none_match` option stay.
 
 ### Added
 
 - `FinlightClient` and `FinlightConfig` with `articles.search`, `articles.search_all`
   (`SearchAllResult`), `articles.get`, `articles.get_by_link`, `companies.search`, `companies.get_many`,
-  `companies.get` (ETag revalidation, `cache_info(record)`) and `sources.list`. Lists carry `skipped`
+  `companies.get` (`cache_info(record)`, your own `if_none_match`) and `sources.list`. Lists carry `skipped`
   (`SkippedEntry`) for entries that could not be read.
   Lookups (`companies.*`, `sources.list`) cost 1 credit per call from the same monthly quota and burst
   limit as articles (`get_many` 1 per call); a 304 answer and errors cost 1 credit too.
+  The SDK keeps no cache of company records: `companies.get` sends `If-None-Match` only with your
+  `if_none_match` and returns `None` on a 304. To save credits, keep the records yourself and do not call
+  again within `max-age`.
 - `client.stream(...)` and `client.raw_stream(...)` return a `FinlightStream` (async iterator of
   `StreamEvent`): ping and pong watchdog, rotation before the 2 hour limit, the same subscribe after every
   reconnect, duplicate filter, `takeover` option, typed terminal errors (`PreemptedError`).

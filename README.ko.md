@@ -92,8 +92,9 @@ article = client.articles.get_by_link("https://www.reuters.com/...")
 
 companies = client.companies.search("NVDA", mic="XNAS")   # at most 10, no pages
 companies = client.companies.get_many([4821, 1001])
-company = client.companies.get(4821)                      # revalidated with its ETag next time
-print(cache_info(company))
+company = client.companies.get(4821)                      # the SDK keeps no cache
+info = cache_info(company)                                # etag, cache_control
+again = client.companies.get(4821, if_none_match=info.etag)  # None on 304 (not modified)
 
 sources = client.sources.list()
 ```
@@ -104,9 +105,11 @@ sources = client.sources.list()
 - 조회는 기사와 같은 월간 할당량과 버스트 제한을 사용합니다. `companies.search`, `companies.get_many`,
   `companies.get`, `sources.list`는 호출마다 1 크레딧이 듭니다(`get_many`는 기업별이 아니라 호출당 1).
   304 응답(ETag 재검증)과 오류도 1 크레딧이 듭니다.
-- `companies.get`은 최근 레코드를 보관하고 ETag로 다시 검증합니다(`company_cache_size`). 직접
-  `if_none_match=...`를 주면 304 응답에서 `None`을 반환합니다. `cache_info(record)`는 `etag`, `cache_control`,
-  `not_modified`를 제공합니다.
+- SDK는 회사 레코드를 캐시하지 않습니다. 호출은 매번 서버로 갑니다. 크레딧을 아끼려면 레코드를 직접
+  보관하고 Cache-Control의 `max-age` 동안 다시 호출하지 마세요(중요한 회사 필드는 이미 각 기사에 들어
+  있습니다). `cache_info(record)`는 `etag`와 `cache_control`을 제공합니다. ETag를 `if_none_match=...`로
+  넘기면 다시 검증하며, 304 응답에서 `None`을 반환합니다. 아끼는 것은 다운로드이지 크레딧이 아닙니다.
+  `if_none_match`가 없으면 `If-None-Match`를 보내지 않습니다.
 - `companies.search`, `companies.get_many`, `sources.list`는 `skipped` 속성이 있는 리스트를 반환합니다.
   검색 페이지의 `ArticlePage.skipped`도 같으며, 읽을 수 없는 항목이 여기에 들어갑니다.
 
@@ -273,7 +276,6 @@ client = FinlightClient(
 | `burst_wait` | 10 | `Retry-After`가 없을 때의 버스트 대기 |
 | `max_pages` | 10 | `search_all`의 페이지 상한 |
 | `max_response_bytes` | 32 MiB | REST 응답의 크기 상한 |
-| `company_cache_size` | 256 | `companies.get`이 보관하는 레코드 수, 0이면 끔 |
 | `ping_interval` | 25 | 스트림 ping |
 | `watchdog_timeout` | 60 | 이 시간 동안 pong이 없으면 재연결 |
 | `rotation_interval` | 6900(115분) | 2시간 한도 전에 새 연결 |

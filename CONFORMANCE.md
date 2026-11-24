@@ -1,6 +1,6 @@
 # Conformance case map
 
-Every case of the finlight API v3 contract kit 3.0.0-rc.5 (`conformance/conformance.md`) and the pytest test that runs it.
+Every case of the finlight API v3 contract kit 3.0.0-rc.6 (`conformance/conformance.md`) and the pytest test that runs it.
 `tests/conformance/test_case_map.py` fails when a kit case is missing here or a mapped test does not exist.
 Re-sync the kit with `python scripts/sync_conformance.py --from <kit dir>`.
 

@@ -50,8 +50,7 @@ class FinlightConfig:
         seconds, or ``burst_wait`` (10) without the header, then try once more)
         or ``"off"``.
         ``max_pages`` caps ``articles.search_all`` (default 10).
-        ``company_cache_size`` (256, 0 turns it off) is the number of company
-        records ``companies.get`` keeps for ETag revalidation.
+        The SDK keeps no cache of company records (see ``companies.get``).
 
     WebSocket:
         ``ping_interval`` (25 s), ``watchdog_timeout`` (60 s) and
@@ -84,7 +83,6 @@ class FinlightConfig:
     burst_wait: float = 10.0
     max_pages: int = 10
     max_response_bytes: int = 32 * 1024 * 1024
-    company_cache_size: int = 256
 
     ping_interval: float = 25.0
     watchdog_timeout: float = 60.0
@@ -129,8 +127,6 @@ class FinlightConfig:
             raise FinlightValidationError("max_pages must be an integer >= 1")
         if self.quota_reconnect_interval <= 0:
             raise FinlightValidationError("quota_reconnect_interval must be > 0")
-        if isinstance(self.company_cache_size, bool) or not isinstance(self.company_cache_size, int) or self.company_cache_size < 0:
-            raise FinlightValidationError("company_cache_size must be an integer >= 0")
         if self.max_message_bytes < 16 * 1024 * 1024 or self.connect_timeout <= 0:
             raise FinlightValidationError("max_message_bytes must be at least 16 MiB and connect_timeout > 0")
         if self.ping_interval <= 0 or self.watchdog_timeout <= 0 or self.rotation_interval <= 0:

@@ -26,9 +26,14 @@ def main() -> None:
         for company in matches:
             print("company:", company.company_id, company.name, [listing.mic for listing in company.listings])
         if matches:
-            record = client.companies.get(matches[0].company_id)  # revalidated with its ETag next time
+            # The SDK keeps no cache: keep the record yourself within max-age to save credits.
+            record = client.companies.get(matches[0].company_id)
             info = cache_info(record)
             print("record:", record.name, record.sector, "etag:", info.etag if info else None)
+            if info and info.etag:
+                # Revalidating saves the download, not the credit: a 304 costs 1 credit too.
+                again = client.companies.get(record.company_id, if_none_match=info.etag)
+                print("not modified" if again is None else f"changed: {again.name}")
 
         sources = client.sources.list()
         print(f"{len(sources)} sources, e.g.", [source.domain for source in sources[:3]])

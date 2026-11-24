@@ -93,8 +93,9 @@ article = client.articles.get_by_link("https://www.reuters.com/...")
 
 companies = client.companies.search("NVDA", mic="XNAS")   # at most 10, no pages
 companies = client.companies.get_many([4821, 1001])
-company = client.companies.get(4821)                      # revalidated with its ETag next time
-print(cache_info(company))
+company = client.companies.get(4821)                      # the SDK keeps no cache
+info = cache_info(company)                                # etag, cache_control
+again = client.companies.get(4821, if_none_match=info.etag)  # None on 304 (not modified)
 
 sources = client.sources.list()
 ```
@@ -105,9 +106,11 @@ sources = client.sources.list()
 - 参照系の呼び出しは記事と同じ月間クォータとバースト制限を使います。`companies.search`、`companies.get_many`、
   `companies.get`、`sources.list` は呼び出しごとに 1 クレジットかかります（`get_many` は企業ごとではなく 1 回の
   呼び出しごとに 1）。304 応答（ETag による再検証）とエラーも 1 クレジットかかります。
-- `companies.get` は直近のレコードを保持し、ETag で再検証します（`company_cache_size`）。独自の
-  `if_none_match=...` を渡すと、304 応答では `None` が返ります。`cache_info(record)` は `etag`、
-  `cache_control`、`not_modified` を返します。
+- SDK は企業レコードをキャッシュしません。呼び出しは毎回サーバーに届きます。クレジットを節約するには、
+  レコードを自分で保持し、Cache-Control の `max-age` の間は再度呼び出さないでください（重要な企業フィールドは
+  各記事にすでに含まれています）。`cache_info(record)` は `etag` と `cache_control` を返します。ETag を
+  `if_none_match=...` として渡すと再検証でき、304 応答では `None` が返ります。節約できるのはダウンロードで、
+  クレジットではありません。`if_none_match` がなければ `If-None-Match` は送られません。
 - `companies.search`、`companies.get_many`、`sources.list` は `skipped` 属性付きのリストを返します。
   検索ページの `ArticlePage.skipped` も同様で、読み取れなかったエントリが入ります。
 
@@ -275,7 +278,6 @@ client = FinlightClient(
 | `burst_wait` | 10 | `Retry-After` がないときのバースト待機 |
 | `max_pages` | 10 | `search_all` のページ上限 |
 | `max_response_bytes` | 32 MiB | REST 応答のサイズ上限 |
-| `company_cache_size` | 256 | `companies.get` が保持するレコード数、0 で無効 |
 | `ping_interval` | 25 | ストリームの ping |
 | `watchdog_timeout` | 60 | この時間 pong がなければ再接続 |
 | `rotation_interval` | 6900（115 分） | 2 時間の上限前に新しい接続を開く |

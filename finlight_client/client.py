@@ -56,7 +56,7 @@ class FinlightClient:
         self._config = config
         self._http = HttpTransport(config)
         self.articles = ArticlesService(self._http, config)
-        self.companies = CompaniesService(self._http, config.company_cache_size)
+        self.companies = CompaniesService(self._http)
         self.sources = SourcesService(self._http)
 
     @property

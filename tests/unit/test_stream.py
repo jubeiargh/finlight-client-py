@@ -63,7 +63,7 @@ def test_default_intervals() -> None:
     assert (cfg.ping_interval, cfg.watchdog_timeout, cfg.rotation_interval) == (25.0, 60.0, 115 * 60.0)
     assert cfg.max_message_bytes == 32 * 1024 * 1024 and cfg.connect_timeout == 30.0
     assert (cfg.reconnect_base_delay, cfg.reconnect_max_delay, cfg.long_backoff) == (1.0, 30.0, 60.0)
-    assert cfg.company_cache_size == 256 and cfg.search_failed_threshold == 5
+    assert not hasattr(cfg, "company_cache_size") and cfg.search_failed_threshold == 5
     assert cfg.dedupe_cache_size == 1000 and cfg.max_pages == 10 and cfg.max_retries == 3
     assert cfg.retry_on_burst == "once" and cfg.burst_wait == 10.0
     assert not hasattr(cfg, "takeover")  # a stream option, not a config key

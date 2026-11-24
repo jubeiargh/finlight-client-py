@@ -249,14 +249,14 @@ class SkippedEntry:
 
 @dataclass(frozen=True)
 class CacheInfo:
-    """HTTP cache data of a record from ``companies.get`` (see :func:`cache_info`).
+    """ETag and Cache-Control of a record from ``companies.get`` (see :func:`cache_info`).
 
-    ``not_modified`` is True when the server answered 304 and the SDK served its cached copy.
+    The SDK keeps no cache. Keep the record yourself within ``max-age`` and pass ``etag``
+    back as ``if_none_match`` to revalidate it.
     """
 
     etag: Optional[str]
     cache_control: Optional[str]
-    not_modified: bool = False
 
 
 @dataclass
