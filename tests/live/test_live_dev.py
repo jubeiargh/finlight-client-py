@@ -113,8 +113,9 @@ def test_companies(client: FinlightClient) -> None:
     again = client.companies.get(matches[0].company_id)
     assert again.company_id == record.company_id
     mics = [listing.mic for listing in record.listings]
-    if len(mics) != len(set(mics)):
-        pytest.xfail("server not on contract rc.2 yet: listings not deduped per exchange")
+    assert len(mics) == len(set(mics)), "listings name each exchange at most once (contract rc.2)"
+    if record.primary_listing is not None and record.listings:
+        assert record.listings[0].mic == record.primary_listing.mic
 
 
 async def _first_admitted(make_stream: Any, timeout: float = 20.0) -> tuple[Any, list[Any]]:
