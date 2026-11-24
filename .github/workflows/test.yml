@@ -1,0 +1,70 @@
+name: Test
+
+on:
+  push:
+    branches: [main, v3]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[test]"
+      - run: python scripts/check_conformance.py
+      # Unit, conformance (every kit case) and the five examples. No network, no keys.
+      - run: pytest
+
+  lowest-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install "requests==2.31.0" "pydantic==2.7.0" "websockets==15.0"
+      - run: pip install --no-deps -e . && pip install pytest pytest-asyncio pytest-httpserver pytest-socket
+      - run: pip list
+      - run: pytest
+
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check finlight_client tests examples scripts
+      - run: mypy
+      - run: python scripts/check_readme.py
+      # Wheel and sdist must not contain conformance/, local/, tests/ or examples/.
+      - run: python scripts/check_package.py
+      - name: No AI attribution in commit messages
+        run: |
+          if git log --format=%B | grep -i -E "co-authored-by:.*(claude|anthropic|copilot|openai)|generated (with|by) (claude|ai)"; then
+            echo "commit messages must not carry AI attribution"; exit 1
+          fi
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
