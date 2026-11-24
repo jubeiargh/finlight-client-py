@@ -136,9 +136,13 @@ asyncio.run(main())
 - 자동 백필은 하지 않습니다. `on_reconnect(last_seen, reason)`은 마지막으로 본 `availableAt`
   (raw는 `firstSeenAt`)을 받습니다. 빈 구간은 `articles.search_all(from_=last_seen, order_by="availableAt")`
   (raw는 `order_by="firstSeenAt"`)로 채우세요.
-- 치명적인 문제는 오류로 루프를 끝냅니다: 잘못된 키(`UnauthorizedError`), WebSocket 권한 없음 또는
-  할당량 소진(`ForbiddenError`), 구독 거부(`ValidationFailedError`), 다른 연결의 인계 또는 할당량 소진에
-  따른 `PreemptedError`. 그 밖의 문제는 다시 연결하고 `on_error`로 알립니다.
+- 치명적인 문제는 오류로 루프를 끝냅니다: 잘못된 키(`UnauthorizedError`), WebSocket 권한 없음
+  (`ForbiddenError`), 구독 거부(`ValidationFailedError`), 다른 연결의 인계에 따른 `PreemptedError`.
+  그 밖의 문제는 다시 연결하고 `on_error`로 알립니다.
+- 월간 WebSocket 할당량을 다 쓰면(연결 거부, 또는 이유가 `quota_exceeded`인 `PreemptedError`) 스트림은
+  끝나지 않고, 할당량이 회복될 때까지 1시간마다 다시 시도합니다. 시도할 때마다 경고를 기록하고 `on_error`를
+  호출합니다. `quota_reconnect=False`로 설정하면 오류로 끝납니다. 간격은 `quota_reconnect_interval`로
+  바꿀 수 있습니다.
 - `async with` 블록을 벗어나면 연결이 닫힙니다. 취소는 절대 무시되지 않습니다.
 
 알아 둘 제한:
@@ -206,10 +210,11 @@ JSON을 보관합니다. 그다음 대시보드에서 Webhook을 `payloadVersion
 | `FinlightNetworkError`, `FinlightTimeoutError` | 네트워크 장애 또는 시간 초과. 원래 오류는 `__cause__`. |
 | `FinlightDecodeError` | 단일 응답을 읽을 수 없음. |
 | `WebhookVerificationError` | Webhook 검증 실패(`reason`). |
-| `PreemptedError` | 스트림이 인계되었거나 할당량이 소진됨(`reason`, `new_lease_id`). |
+| `PreemptedError` | 다른 연결이 스트림을 인계함(`reason`, `new_lease_id`). `quota_reconnect=False`이면 할당량 소진 시에도 발생. |
 
 재시도: 5xx 응답, 네트워크 오류, 시간 초과는 대기 시간을 늘려 가며 최대 3번 재시도합니다(검색 포함).
-400, 401, 403, 404와 월간 할당량 429는 재시도하지 않습니다. 버스트 429는 `Retry-After`초(헤더가 없으면
+400, 401, 403, 404와 월간 할당량 429는 재시도하지 않습니다. 월간 할당량 429는 `search_all` 안에서도 즉시
+오류가 되며, 할당량을 기다리는 것은 스트림뿐입니다(위 참고). 버스트 429는 `Retry-After`초(헤더가 없으면
 10초)를 기다린 뒤 한 번만 다시 시도합니다. `retry_on_burst="off"`로 끌 수 있습니다. 호출마다 고유한
 `X-Request-Id`를 보내며 재시도에도 같은 값을 씁니다. Ctrl+C로 호출을 중단할 수 있고, 대기는 즉시 끝나며
 재시도하지 않습니다.
@@ -228,6 +233,7 @@ client = FinlightClient(
     max_pages=10,
     ping_interval=25.0, pong_timeout=60.0, rotation_interval=6900.0,
     takeover=False,
+    quota_reconnect=True, quota_reconnect_interval=3600.0,
     session=None,                         # your own requests.Session
 )
 ```

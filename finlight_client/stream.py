@@ -12,9 +12,14 @@ each reconnect and drops duplicate deliveries. It never backfills by itself: use
 ``on_reconnect`` and ``articles.search_all`` to fill gaps.
 
 Terminal problems end the iteration with an error: a refused dial (401, 403
-without WebSockets or with an exhausted quota), ``VALIDATION_FAILED``,
-``connection.preempted`` (:class:`PreemptedError`) and close code 1008. Other
-problems reconnect with backoff and are reported through ``on_error``.
+without WebSockets), ``VALIDATION_FAILED``, ``connection.preempted`` with reason
+``connection_limit`` (:class:`PreemptedError`) and close code 1008. An exhausted
+monthly WebSocket quota (dial 403 "quota exceeded" or ``connection.preempted``
+with reason ``quota_exceeded``) is not terminal by default: the stream tries
+again every ``quota_reconnect_interval`` seconds (1 hour) until the quota allows
+it, logging a warning and calling ``on_error`` on every attempt. With
+``quota_reconnect=False`` it ends with the error instead. Other problems
+reconnect with backoff and are reported through ``on_error``.
 
 Notes:
 
@@ -187,7 +192,7 @@ async def _default_connect(
 
 @dataclass
 class _Outcome:
-    kind: str  # "terminal" | "reconnect" | "rotate"
+    kind: str  # "terminal" | "reconnect" | "rotate" | "quota"
     reason: str = ""
     error: Optional[BaseException] = None
     delay: Optional[float] = None  # None: normal backoff
@@ -457,6 +462,8 @@ class Stream:
                     raise
                 except DialRefused as refused:
                     verdict = _classify_dial(refused.status, refused.body)
+                    if verdict.kind == "quota" and not self._config.quota_reconnect:
+                        verdict = _DialVerdict("terminal", verdict.error)
                     if current is not None:
                         # Rotation dial failed: free the slot first, then dial again.
                         await current.close(1000)
@@ -467,6 +474,9 @@ class Stream:
                     if verdict.kind == "terminal":
                         self._end(verdict.error)
                         return
+                    if verdict.kind == "quota":
+                        delay = self._quota_wait(verdict.error)
+                        continue
                     if verdict.error is not None:
                         self._emit_error(verdict.error)
                     if verdict.kind == "long":
@@ -518,6 +528,12 @@ class Stream:
                     current = None
                     self._end(outcome.error)
                     return
+                if outcome.kind == "quota":
+                    self._retire(session)
+                    current = None
+                    reconnect_reason = outcome.reason
+                    delay = self._quota_wait(outcome.error)
+                    continue
                 reconnect_reason = outcome.reason
                 healthy = session.admitted and outcome.reason in ("watchdog", "closed", "rotation")
                 if healthy:
@@ -539,6 +555,14 @@ class Stream:
             failure = FinlightError(f"stream failed: {type(exc).__name__}")
             failure.__cause__ = exc
             self._end(failure)
+
+    def _quota_wait(self, error: Optional[BaseException]) -> float:
+        """Monthly WebSocket quota exhausted: report it and wait for the next hourly attempt."""
+        delay = float(self._config.quota_reconnect_interval)
+        logger.warning("finlight: WebSocket quota exhausted, trying again in %.0f s", delay)
+        if error is not None:
+            self._emit_error(error)
+        return delay
 
     def _retire(self, session: _Session) -> None:
         """Close a dead session in the background so a hanging close never delays the reconnect."""
@@ -577,7 +601,10 @@ class Stream:
                 new_lease_id=f.get("new_lease_id"),
                 timestamp=f.get("timestamp"),
             )
-            session.finish(_Outcome("terminal", error=error))
+            if f.get("reason") == "quota_exceeded" and self._config.quota_reconnect:
+                session.finish(_Outcome("quota", reason="quota_exceeded", error=error))
+            else:
+                session.finish(_Outcome("terminal", error=error))
             return
         if ftype == _frames.ERROR:
             self._handle_error_frame(session, frame)
@@ -702,7 +729,7 @@ class Stream:
 
 @dataclass
 class _DialVerdict:
-    kind: str  # "terminal" | "long" | "backoff"
+    kind: str  # "terminal" | "quota" | "long" | "backoff"
     error: Optional[FinlightApiError]
 
 
@@ -731,7 +758,7 @@ def _classify_dial(status: int, body: Optional[bytes]) -> _DialVerdict:
         if message and message.startswith("Your subscription does not include WebSockets"):
             return _DialVerdict("terminal", ForbiddenError(text, status=403, detail=message, raw=raw))
         if message and message.startswith("WebSocket quota exceeded"):
-            return _DialVerdict("terminal", ForbiddenError(text, status=403, detail=message, raw=raw))
+            return _DialVerdict("quota", ForbiddenError(text, status=403, detail=message, raw=raw))
         if message and message.startswith("Too many concurrent connections"):
             hint = text + ". Another connection holds the slot; set takeover=True to replace it."
             return _DialVerdict("long", ForbiddenError(hint, status=403, detail=message, raw=raw))

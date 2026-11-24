@@ -133,9 +133,13 @@ asyncio.run(main())
 - It never backfills. `on_reconnect(last_seen, reason)` gets the latest `availableAt` (raw:
   `firstSeenAt`) you saw. Fill gaps with `articles.search_all(from_=last_seen, order_by="availableAt")`
   (raw: `order_by="firstSeenAt"`).
-- Terminal problems end the loop with an error: invalid key (`UnauthorizedError`), no WebSocket access or
-  quota (`ForbiddenError`), a rejected subscribe (`ValidationFailedError`), and `PreemptedError` when
-  another connection took over or the quota ran out. Other problems reconnect and go to `on_error`.
+- Terminal problems end the loop with an error: invalid key (`UnauthorizedError`), no WebSocket access
+  (`ForbiddenError`), a rejected subscribe (`ValidationFailedError`), and `PreemptedError` when another
+  connection took over. Other problems reconnect and go to `on_error`.
+- When the monthly WebSocket quota is used up (the dial is refused, or `PreemptedError` with reason
+  `quota_exceeded`), the stream does not end: it tries again every hour until the quota allows it. Each
+  attempt logs a warning and calls `on_error`. Set `quota_reconnect=False` to end the stream with the
+  error instead; `quota_reconnect_interval` changes the hour.
 - Leaving the `async with` block closes the socket. Cancellation is never swallowed.
 
 Limits to know:
@@ -204,10 +208,11 @@ All errors derive from `FinlightError` and carry a `kind` string.
 | `FinlightNetworkError`, `FinlightTimeoutError` | Network failure or timeout. The original error is `__cause__`. |
 | `FinlightDecodeError` | A single response could not be read. |
 | `WebhookVerificationError` | A webhook failed verification (`reason`). |
-| `PreemptedError` | The stream was taken over or ran out of quota (`reason`, `new_lease_id`). |
+| `PreemptedError` | Another connection took over the stream (`reason`, `new_lease_id`). With `quota_reconnect=False` also when the quota ran out. |
 
 Retries: 5xx answers, network errors and timeouts are retried up to 3 times with growing waits, the
-search included. 400, 401, 403, 404 and a monthly 429 are never retried. A burst 429 waits
+search included. 400, 401, 403, 404 and a monthly 429 are never retried: a monthly 429 fails at once,
+also inside `search_all`; only streams wait for the quota (see above). A burst 429 waits
 `Retry-After` seconds (10 without the header) and tries once more; set `retry_on_burst="off"` to turn
 that off. Every call sends its own `X-Request-Id`, the same on each retry. Press Ctrl+C to stop a call;
 waits end at once and nothing is retried.
@@ -226,6 +231,7 @@ client = FinlightClient(
     max_pages=10,
     ping_interval=25.0, pong_timeout=60.0, rotation_interval=6900.0,
     takeover=False,
+    quota_reconnect=True, quota_reconnect_interval=3600.0,
     session=None,                         # your own requests.Session
 )
 ```

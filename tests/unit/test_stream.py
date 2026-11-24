@@ -60,6 +60,7 @@ def test_default_intervals() -> None:
     assert cfg.max_message_bytes >= 16 * 1024 * 1024
     assert cfg.dedupe_size == 1000 and cfg.max_pages == 10 and cfg.max_retries == 3
     assert cfg.retry_on_burst == "once" and cfg.burst_wait == 10.0 and cfg.takeover is False
+    assert cfg.quota_reconnect is True and cfg.quota_reconnect_interval == 3600.0
 
 
 async def test_stop_closes_socket_with_1000_and_leaves_nothing(ws_server: WsServer, fake_clock: FakeClock) -> None:
@@ -282,3 +283,48 @@ async def test_large_frame_is_accepted(ws_server: WsServer, fake_clock: FakeCloc
     await consumer.wait_items(1)
     assert len(consumer.items[0].data.content) == 2 * 1024 * 1024
     await stream.close()
+
+
+async def test_quota_reconnect_interval_is_configurable(ws_server: WsServer, fake_clock: FakeClock,
+                                                         caplog: Any) -> None:
+    errors: list[Any] = []
+    refusal = (403, '{"message":"WebSocket quota exceeded for the current period"}')
+    ws_server.reject_plan.extend([refusal, refusal])
+    stream = make(ws_server, fake_clock, quota_reconnect_interval=600.0).stream(query="x", on_error=errors.append)
+    consumer = Consumer(stream)
+    for _ in range(100):
+        if ws_server.dials and errors:
+            break
+        await asyncio.sleep(0.005)
+    await fake_clock.advance(599.9)
+    assert len(ws_server.dials) == 1 and consumer.error is None
+    await fake_clock.advance(0.2)
+    await settle(0.05)
+    assert len(ws_server.dials) == 2 and len(errors) == 2
+    assert all(isinstance(e, ForbiddenError) for e in errors)
+    assert caplog.text.count("quota exhausted") == 2
+    await stream.close()
+
+
+async def test_quota_preempt_is_terminal_when_switched_off(ws_server: WsServer, fake_clock: FakeClock) -> None:
+    stream = make(ws_server, fake_clock, quota_reconnect=False).stream(query="x")
+    consumer = Consumer(stream)
+    conn = await ws_server.next_connection()
+    await conn.send({"event": "connection.preempted", "payloadVersion": 3,
+                     "data": {"reason": "quota_exceeded", "newLeaseId": None, "timestamp": 1}})
+    await asyncio.wait_for(consumer.task, 3)
+    assert getattr(consumer.error, "reason", None) == "quota_exceeded"
+    await fake_clock.advance(7200)
+    assert len(ws_server.dials) == 1
+
+
+async def test_connection_limit_preempt_stays_terminal(ws_server: WsServer, fake_clock: FakeClock) -> None:
+    stream = make(ws_server, fake_clock).stream(query="x")
+    consumer = Consumer(stream)
+    conn = await ws_server.next_connection()
+    await conn.send({"event": "connection.preempted", "payloadVersion": 3,
+                     "data": {"reason": "connection_limit", "newLeaseId": "l2", "timestamp": 1}})
+    await asyncio.wait_for(consumer.task, 3)
+    assert getattr(consumer.error, "reason", None) == "connection_limit"
+    await fake_clock.advance(7200)
+    assert len(ws_server.dials) == 1

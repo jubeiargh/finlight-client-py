@@ -34,6 +34,10 @@ ENRICHED_KEYS = {
     "countries", "categories", "excludeEmptyContent", "includeUpdates",
 }
 RAW_KEYS = {"query", "sources", "excludeSources", "language", "includeUpdates"}
+# Kit rc.2 still expects these to be terminal. Owner decision 2026-11-24 (kit rc.3): an exhausted
+# monthly WebSocket quota reconnects every hour by default. With quota_reconnect=False the old
+# terminal expectation still holds, and both are tested.
+QUOTA_CASES = {"S-10", "S-24"}
 DEFAULT_FRAME = {"payloadVersion": 3, "query": "ticker:XMPL", "clientNonce": "c-kit-1"}
 
 
@@ -50,12 +54,15 @@ def sdk_frame(frame: dict[str, Any], raw: bool) -> dict[str, Any]:
 
 
 class Session:
-    def __init__(self, fx: dict[str, Any], server: WsServer, clock: FakeClock) -> None:
+    def __init__(self, fx: dict[str, Any], server: WsServer, clock: FakeClock, *, quota_reconnect: bool = True) -> None:
         self.fx = fx
+        self.quota_reconnect = quota_reconnect
         self.server = server
         self.clock = clock
         self.raw = fx.get("endpoint") == "raw"
         self.steps: list[dict[str, Any]] = fx["steps"]
+        if quota_reconnect and fx["id"] in QUOTA_CASES:
+            self.steps = self._quota_steps(self.steps)
         self.items: asyncio.Queue[StreamEvent] = asyncio.Queue()
         self.admitted: list[tuple[Any, ...]] = []
         self.admitted_seen = 0
@@ -72,6 +79,19 @@ class Session:
         self.first_frame: dict[str, Any] = first or DEFAULT_FRAME
         server.auto_pong = not any(s["step"] == "clientSends" and "match" in s for s in self.steps)
 
+    @staticmethod
+    def _quota_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Replace the rc.2 terminal expectation with the hourly quota reconnect."""
+        out: list[dict[str, Any]] = []
+        for step in steps:
+            if step.get("outcome") == "terminalError":
+                out.append(dict(step, outcome="quotaReconnect"))
+            elif step.get("outcome") == "noReconnect":
+                continue
+            else:
+                out.append(step)
+        return out
+
     def api_key(self) -> str:
         dial = next(s for s in self.steps if s["step"] == "dial")
         return dial.get("expectRequestHeaders", {}).get("x-api-key") or KIT_KEY
@@ -87,6 +107,7 @@ class Session:
             clock=self.clock,
             random=lambda: 0.0,
             nonce_factory=lambda: nonce,
+            quota_reconnect=self.quota_reconnect,
         )
         factory = client.raw_stream if self.raw else client.stream
         self.stream = factory(
@@ -267,6 +288,37 @@ class Session:
         else:
             raise AssertionError(kind)
 
+    async def expect_quotaReconnect(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
+        """Quota exhausted: not terminal; reported, then one new dial per hour, each one reported."""
+        def quota_errors() -> list[BaseException]:
+            return [e for e in self.errors
+                    if (isinstance(e, PreemptedError) and e.reason == "quota_exceeded")
+                    or (isinstance(e, ForbiddenError) and (e.detail or "").startswith("WebSocket quota exceeded"))]
+
+        await self.wait_for(lambda: len(quota_errors()) == 1, "the quota report")
+        assert self.terminal is None and not self.done.is_set()
+        if step["error"] == "PreemptedError":
+            err = quota_errors()[0]
+            assert err.reason == step["reason"] and err.new_lease_id == step["newLeaseId"]
+        dial = self.server.dials[-1]["headers"]
+        refusal = (403, '{"message":"WebSocket quota exceeded for the current period"}')
+        for attempt in (2, 3):
+            self.server.reject_plan.append(refusal)  # the quota is still exhausted
+            before = len(self.server.dials)
+            # The wait counts from the previous attempt; leave a margin for the fake-clock step.
+            await self.clock.advance(3598)
+            assert len(self.server.dials) == before, "retried before the hour was over"
+            await self.clock.advance(3)
+            await self.wait_for(lambda b=before: len(self.server.dials) > b, "the hourly dial")
+            await self.wait_for(lambda n=attempt: len(quota_errors()) == n, "the next quota report")
+            assert self.terminal is None and not self.done.is_set()
+        assert dict(self.server.dials[-1]["headers"])["x-api-key"] == dict(dial)["x-api-key"]
+        before = len(self.server.dials)
+        await self.clock.advance(3600)  # quota is back: the dial is accepted and subscribes again
+        await self.wait_for(lambda: len(self.server.dials) > before, "the dial after the quota came back")
+        conn = await self.server.next_connection()
+        assert await conn.recv() == sdk_frame(self.first_frame, self.raw)
+
     async def expect_noReconnect(self, step: dict[str, Any], rest: list[dict[str, Any]]) -> None:  # noqa: N802
         dials = len(self.server.dials)
         if self.done.is_set():
@@ -319,6 +371,18 @@ class Session:
             self.conn = await self.server.next_connection()
             await self.conn.recv()
         assert self.terminal is None
+
+
+@pytest.mark.parametrize("case", sorted(QUOTA_CASES))
+async def test_quota_terminal_when_switched_off(case: str, ws_server: WsServer, fake_clock: FakeClock) -> None:
+    """The rc.2 expectation (terminal, no reconnect) with quota_reconnect=False."""
+    path = dict(SESSIONS)[case]
+    session = Session(load(f"ws-sessions/{path.name}"), ws_server, fake_clock, quota_reconnect=False)
+    try:
+        await asyncio.wait_for(session.run(), 60)
+    finally:
+        await session.close()
+    assert session.terminal is not None
 
 
 @pytest.mark.parametrize(("case", "path"), SESSIONS, ids=[c for c, _ in SESSIONS])

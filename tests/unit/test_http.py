@@ -225,3 +225,11 @@ def test_config_validation_and_overrides() -> None:
     assert FinlightConfig(api_key="k", wss_url="wss://x.example/").ws_url(raw=True) == "wss://x.example/raw"
     client = FinlightClient(config=cfg, max_pages=3)
     assert client.config.max_pages == 3 and client.config.api_key == "k"
+
+
+def test_monthly_429_ends_search_all_at_once(httpserver: Any, make_client: Any, sleeps: Any) -> None:
+    sequence(httpserver, [(429, dict(BURST, limitType="monthly",
+                                     detail="Throttling Exception: Exceeded token limit of 1000 for the current period."), {})])
+    with pytest.raises(RateLimitedError) as info:
+        list(make_client().articles.search_all(query="x"))
+    assert info.value.limit_type == "monthly" and len(httpserver.log) == 1 and sleeps.calls == []

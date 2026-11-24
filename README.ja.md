@@ -136,9 +136,13 @@ asyncio.run(main())
 - 自動でのバックフィルは行いません。`on_reconnect(last_seen, reason)` は最後に見た `availableAt`
   （raw では `firstSeenAt`）を受け取ります。欠けた分は `articles.search_all(from_=last_seen,
   order_by="availableAt")`（raw では `order_by="firstSeenAt"`）で補ってください。
-- 致命的な問題はエラーでループを終了します：無効なキー（`UnauthorizedError`）、WebSocket の権限なしや
-  クォータ切れ（`ForbiddenError`）、購読の拒否（`ValidationFailedError`）、別の接続による乗っ取りや
-  クォータ切れの `PreemptedError`。その他の問題は再接続し、`on_error` に通知されます。
+- 致命的な問題はエラーでループを終了します：無効なキー（`UnauthorizedError`）、WebSocket の権限なし
+  （`ForbiddenError`）、購読の拒否（`ValidationFailedError`）、別の接続による乗っ取りの `PreemptedError`。
+  その他の問題は再接続し、`on_error` に通知されます。
+- 月間の WebSocket クォータを使い切った場合（接続の拒否、または理由が `quota_exceeded` の
+  `PreemptedError`）、ストリームは終了しません。クォータが戻るまで 1 時間ごとに再試行します。各試行で
+  警告をログに出し、`on_error` を呼びます。`quota_reconnect=False` にするとエラーで終了します。
+  間隔は `quota_reconnect_interval` で変更できます。
 - `async with` ブロックを抜けると接続が閉じます。キャンセルが握りつぶされることはありません。
 
 知っておくべき制限：
@@ -207,10 +211,11 @@ Webhook を v3 に切り替える手順：まずこの SDK をデプロイし、
 | `FinlightNetworkError`、`FinlightTimeoutError` | ネットワーク障害またはタイムアウト。元のエラーは `__cause__`。 |
 | `FinlightDecodeError` | 単一の応答を読み取れなかった。 |
 | `WebhookVerificationError` | Webhook の検証に失敗した（`reason`）。 |
-| `PreemptedError` | ストリームが乗っ取られたかクォータが切れた（`reason`、`new_lease_id`）。 |
+| `PreemptedError` | 別の接続がストリームを引き継いだ（`reason`、`new_lease_id`）。`quota_reconnect=False` のときはクォータ切れでも発生。 |
 
 再試行：5xx 応答、ネットワークエラー、タイムアウトは待ち時間を延ばしながら最大 3 回再試行します
-（検索も含む）。400、401、403、404 と月間クォータの 429 は再試行しません。バースト 429 は
+（検索も含む）。400、401、403、404 と月間クォータの 429 は再試行しません。月間クォータの 429 は `search_all` の中でも
+すぐにエラーになり、クォータを待つのはストリームだけです（上記参照）。バースト 429 は
 `Retry-After` 秒（ヘッダーがなければ 10 秒）待ってからもう一度だけ試します。`retry_on_burst="off"` で
 無効にできます。呼び出しごとに専用の `X-Request-Id` を送り、再試行でも同じ値を使います。
 Ctrl+C で呼び出しを中断でき、待機はすぐに終わり、再試行もされません。
@@ -229,6 +234,7 @@ client = FinlightClient(
     max_pages=10,
     ping_interval=25.0, pong_timeout=60.0, rotation_interval=6900.0,
     takeover=False,
+    quota_reconnect=True, quota_reconnect_interval=3600.0,
     session=None,                         # your own requests.Session
 )
 ```

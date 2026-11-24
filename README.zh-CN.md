@@ -132,9 +132,12 @@ asyncio.run(main())
 - 它从不自动补数据。`on_reconnect(last_seen, reason)` 会收到你看到的最新 `availableAt`
   （raw 为 `firstSeenAt`）。可用 `articles.search_all(from_=last_seen, order_by="availableAt")`
   补齐缺口（raw 用 `order_by="firstSeenAt"`）。
-- 终止性问题会以错误结束循环：无效密钥（`UnauthorizedError`）、无 WebSocket 权限或配额用尽
-  （`ForbiddenError`）、订阅被拒（`ValidationFailedError`），以及被其他连接接管或配额用尽时的
-  `PreemptedError`。其他问题会自动重连并交给 `on_error`。
+- 终止性问题会以错误结束循环：无效密钥（`UnauthorizedError`）、无 WebSocket 权限（`ForbiddenError`）、
+  订阅被拒（`ValidationFailedError`），以及被其他连接接管时的 `PreemptedError`。其他问题会自动重连并交给
+  `on_error`。
+- 每月 WebSocket 配额用尽时（连接被拒绝，或原因为 `quota_exceeded` 的 `PreemptedError`），流不会结束：
+  它每小时重试一次，直到配额恢复。每次尝试都会记录一条警告并调用 `on_error`。设置 `quota_reconnect=False`
+  可改为以错误结束流；`quota_reconnect_interval` 可修改间隔。
 - 离开 `async with` 代码块即关闭连接。取消操作永远不会被吞掉。
 
 需要了解的限制：
@@ -200,10 +203,11 @@ def handle(raw_body: bytes, headers) -> int:
 | `FinlightNetworkError`、`FinlightTimeoutError` | 网络故障或超时。原始错误位于 `__cause__`。 |
 | `FinlightDecodeError` | 单个响应无法读取。 |
 | `WebhookVerificationError` | Webhook 验证失败（`reason`）。 |
-| `PreemptedError` | 流被接管或配额用尽（`reason`、`new_lease_id`）。 |
+| `PreemptedError` | 流被其他连接接管（`reason`、`new_lease_id`）。设置 `quota_reconnect=False` 时，配额用尽也会抛出。 |
 
 重试：5xx 响应、网络错误和超时最多重试 3 次，等待时间逐次增加，搜索请求也不例外。
-400、401、403、404 以及按月配额的 429 永不重试。突发（burst）429 会等待 `Retry-After` 秒
+400、401、403、404 以及按月配额的 429 永不重试：按月配额的 429 会立即报错，`search_all` 中也是如此；
+只有流会等待配额恢复（见上文）。突发（burst）429 会等待 `Retry-After` 秒
 （没有该请求头时为 10 秒）后再试一次；设置 `retry_on_burst="off"` 可关闭。每次调用都发送自己的
 `X-Request-Id`，重试时保持不变。按 Ctrl+C 可中止调用；等待会立即结束，且不会重试。
 
@@ -221,6 +225,7 @@ client = FinlightClient(
     max_pages=10,
     ping_interval=25.0, pong_timeout=60.0, rotation_interval=6900.0,
     takeover=False,
+    quota_reconnect=True, quota_reconnect_interval=3600.0,
     session=None,                         # your own requests.Session
 )
 ```

@@ -4,6 +4,12 @@ Every case of the finlight API v3 contract kit (`conformance/conformance.md`) an
 `tests/conformance/test_case_map.py` fails when a kit case is missing here or a mapped test does not exist.
 Re-sync the kit with `python scripts/sync_conformance.py --from <kit dir>`.
 
+Note on S-10 and S-24: kit rc.2 expects an exhausted WebSocket quota to be terminal. By the owner
+decision of 2026-11-24 (kit rc.3) the stream reconnects every hour instead, by default. The session
+engine replaces those two expectations with the hourly reconnect (`QUOTA_CASES` in
+`tests/conformance/test_ws_sessions.py`); `test_quota_terminal_when_switched_off` still runs the rc.2
+expectation with `quota_reconnect=False`. Remove the override once rc.3 is vendored.
+
 | Case | Title | Test |
 |---|---|---|
 | V-01 | Known constants equal vocab.json | `tests/conformance/test_vocab.py::test_vocab[V-01]` |

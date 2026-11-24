@@ -54,6 +54,9 @@ class FinlightConfig:
     WebSocket:
         ``ping_interval`` (25 s), ``pong_timeout`` (60 s) and
         ``rotation_interval`` (115 min) keep connections alive and fresh.
+        When the monthly WebSocket quota is exhausted, the stream tries again
+        every ``quota_reconnect_interval`` seconds (1 hour) while
+        ``quota_reconnect`` is True (default); with False it ends with the error.
 
     Injection:
         ``session`` is your own ``requests.Session``; its adapters, proxies and
@@ -83,6 +86,8 @@ class FinlightConfig:
     reconnect_backoff_max: float = 30.0
     connection_limit_backoff: float = 60.0
     search_failed_threshold: int = 5
+    quota_reconnect: bool = True
+    quota_reconnect_interval: float = 3600.0
     takeover: bool = False
     dedupe_size: int = 1000
     max_message_bytes: int = 16 * 1024 * 1024
@@ -115,6 +120,8 @@ class FinlightConfig:
             raise FinlightValidationError("max_retries must be an integer >= 0")
         if isinstance(self.max_pages, bool) or not isinstance(self.max_pages, int) or self.max_pages < 1:
             raise FinlightValidationError("max_pages must be an integer >= 1")
+        if self.quota_reconnect_interval <= 0:
+            raise FinlightValidationError("quota_reconnect_interval must be > 0")
         if self.ping_interval <= 0 or self.pong_timeout <= 0 or self.rotation_interval <= 0:
             raise FinlightValidationError("ping_interval, pong_timeout and rotation_interval must be > 0")
 
