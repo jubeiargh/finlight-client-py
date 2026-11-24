@@ -1,0 +1,122 @@
+{
+  "id": "R-13",
+  "title": "stream() subscribe frame (enriched)",
+  "sdk": {
+    "method": "stream",
+    "args": {
+      "include": [
+        "companies",
+        "events"
+      ],
+      "query": "ticker:XMPL",
+      "language": "en",
+      "includeUpdates": true
+    }
+  },
+  "frame": {
+    "payloadVersion": 3,
+    "include": [
+      "companies",
+      "events"
+    ],
+    "query": "ticker:XMPL",
+    "language": "en",
+    "includeUpdates": true,
+    "clientNonce": "c-kit-1"
+  },
+  "rules": [
+    "payloadVersion is the JSON integer 3, set by the SDK, never by the user",
+    "include is a JSON array; includeContent, includeEntities and extended are never sent",
+    "clientNonce is optional; the SDK may set one per connection",
+    "the frame is sent on the $default route (no \"action\" key)"
+  ],
+  "server": {
+    "frames": [
+      {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      },
+      {
+        "event": "article.created",
+        "payloadVersion": 3,
+        "data": {
+          "id": "EU8JwpsZ8iJehuyPZjMqRz",
+          "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Example Robotics agrees to acquire Sample Sensors",
+          "summary": "Synthetic summary written for the finlight contract kit.",
+          "language": "en",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/lead.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/second.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/third.jpg"
+            }
+          ],
+          "publishedAt": "2026-09-18T12:01:03.000Z",
+          "firstSeenAt": "2026-09-18T12:01:41.000Z",
+          "revisedAt": "2026-09-18T14:30:00.000Z",
+          "availableAt": "2026-09-18T12:03:05.123Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "positive",
+            "confidence": 0.9812
+          },
+          "companies": [
+            {
+              "companyId": 900001,
+              "name": "Example Robotics Inc.",
+              "isin": "ZZ0000000001",
+              "primaryListing": {
+                "ticker": "XMPL",
+                "mic": "XNAS",
+                "country": "US"
+              },
+              "confidence": 0.97,
+              "role": "acquirer",
+              "relevance": 0.95
+            },
+            {
+              "companyId": 900002,
+              "name": "Sample Sensors GmbH",
+              "isin": null,
+              "primaryListing": null,
+              "confidence": 0.88,
+              "role": "target",
+              "relevance": 0.9
+            }
+          ],
+          "events": [
+            {
+              "type": "mna",
+              "direction": "positive",
+              "importance": "high",
+              "confidence": 0.9,
+              "companyIds": [
+                900001,
+                900002
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

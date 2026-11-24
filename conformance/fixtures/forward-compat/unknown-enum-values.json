@@ -1,0 +1,161 @@
+{
+  "id": "F-02",
+  "synthetic": true,
+  "note": "Synthetic: the server does not send these additions today. They model additive changes a v3 client must tolerate.",
+  "added": [
+    "source.type = \"wire_service\"",
+    "sentiment.label = \"mixed\"",
+    "companies[0].role = \"guarantor\"",
+    "events[0].type = \"esg_controversy\"",
+    "events[0].direction = \"mixed\"",
+    "events[0].importance = \"extreme\"",
+    "categories[1] = \"synthetic-new-category\""
+  ],
+  "wire": {
+    "id": "EU8JwpsZ8iJehuyPZjMqRz",
+    "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+    "source": {
+      "domain": "news.example.com",
+      "type": "wire_service"
+    },
+    "title": "Example Robotics agrees to acquire Sample Sensors",
+    "summary": "Synthetic summary written for the finlight contract kit.",
+    "language": "en",
+    "media": [
+      {
+        "url": "https://img.example.com/fixtures/lead.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/second.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/third.jpg"
+      }
+    ],
+    "publishedAt": "2026-09-18T12:01:03.000Z",
+    "firstSeenAt": "2026-09-18T12:01:41.000Z",
+    "revisedAt": "2026-09-18T14:30:00.000Z",
+    "availableAt": "2026-09-18T12:03:05.123Z",
+    "countries": [
+      "US"
+    ],
+    "categories": [
+      "markets",
+      "synthetic-new-category"
+    ],
+    "content": "Synthetic body text for the finlight contract kit. It is not a real article.",
+    "sentiment": {
+      "label": "mixed",
+      "confidence": 0.9812
+    },
+    "companies": [
+      {
+        "companyId": 900001,
+        "name": "Example Robotics Inc.",
+        "isin": "ZZ0000000001",
+        "primaryListing": {
+          "ticker": "XMPL",
+          "mic": "XNAS",
+          "country": "US"
+        },
+        "confidence": 0.97,
+        "role": "guarantor",
+        "relevance": 0.95
+      },
+      {
+        "companyId": 900002,
+        "name": "Sample Sensors GmbH",
+        "isin": null,
+        "primaryListing": null,
+        "confidence": 0.88,
+        "role": "target",
+        "relevance": 0.9
+      }
+    ],
+    "events": [
+      {
+        "type": "esg_controversy",
+        "direction": "mixed",
+        "importance": "extreme",
+        "confidence": 0.9,
+        "companyIds": [
+          900001,
+          900002
+        ]
+      }
+    ]
+  },
+  "known": {
+    "id": "EU8JwpsZ8iJehuyPZjMqRz",
+    "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+    "source": {
+      "domain": "news.example.com",
+      "type": null
+    },
+    "title": "Example Robotics agrees to acquire Sample Sensors",
+    "summary": "Synthetic summary written for the finlight contract kit.",
+    "language": "en",
+    "media": [
+      {
+        "url": "https://img.example.com/fixtures/lead.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/second.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/third.jpg"
+      }
+    ],
+    "publishedAt": "2026-09-18T12:01:03.000Z",
+    "firstSeenAt": "2026-09-18T12:01:41.000Z",
+    "revisedAt": "2026-09-18T14:30:00.000Z",
+    "availableAt": "2026-09-18T12:03:05.123Z",
+    "countries": [
+      "US"
+    ],
+    "categories": [
+      "markets"
+    ],
+    "content": "Synthetic body text for the finlight contract kit. It is not a real article.",
+    "sentiment": {
+      "label": "positive",
+      "confidence": 0.9812
+    },
+    "companies": [
+      {
+        "companyId": 900001,
+        "name": "Example Robotics Inc.",
+        "isin": "ZZ0000000001",
+        "primaryListing": {
+          "ticker": "XMPL",
+          "mic": "XNAS",
+          "country": "US"
+        },
+        "confidence": 0.97,
+        "role": "acquirer",
+        "relevance": 0.95
+      },
+      {
+        "companyId": 900002,
+        "name": "Sample Sensors GmbH",
+        "isin": null,
+        "primaryListing": null,
+        "confidence": 0.88,
+        "role": "target",
+        "relevance": 0.9
+      }
+    ],
+    "events": [
+      {
+        "type": "mna",
+        "direction": "positive",
+        "importance": "high",
+        "confidence": 0.9,
+        "companyIds": [
+          900001,
+          900002
+        ]
+      }
+    ]
+  }
+}

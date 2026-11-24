@@ -1,0 +1,136 @@
+{
+  "id": "D-11",
+  "title": "Blank summary and content arrive as null",
+  "channel": "enriched",
+  "include": [
+    "content",
+    "companies",
+    "events"
+  ],
+  "entitlements": {
+    "fullArticleAccess": true,
+    "sentimentAnalysisAccess": true,
+    "entityAccess": true,
+    "eventAccess": true
+  },
+  "wire": {
+    "id": "4GvQkV9pFKPrRwIQegL3jG",
+    "link": "https://news.example.com/markets/2026/09/19/example-robotics-blank-text",
+    "source": {
+      "domain": "news.example.com",
+      "type": null
+    },
+    "title": "Example Robotics agrees to acquire Sample Sensors",
+    "summary": null,
+    "language": "en",
+    "media": [
+      {
+        "url": "https://img.example.com/fixtures/lead.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/second.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/third.jpg"
+      }
+    ],
+    "publishedAt": "2026-09-18T12:01:03.000Z",
+    "firstSeenAt": "2026-09-18T12:01:41.000Z",
+    "revisedAt": "2026-09-18T14:30:00.000Z",
+    "availableAt": "2026-09-18T12:03:05.123Z",
+    "countries": [
+      "US"
+    ],
+    "categories": [
+      "markets"
+    ],
+    "content": null,
+    "sentiment": {
+      "label": "positive",
+      "confidence": 0.9812
+    },
+    "companies": [
+      {
+        "companyId": 900001,
+        "name": "Example Robotics Inc.",
+        "isin": "ZZ0000000001",
+        "primaryListing": {
+          "ticker": "XMPL",
+          "mic": "XNAS",
+          "country": "US"
+        },
+        "confidence": 0.97,
+        "role": "acquirer",
+        "relevance": 0.95
+      },
+      {
+        "companyId": 900002,
+        "name": "Sample Sensors GmbH",
+        "isin": null,
+        "primaryListing": null,
+        "confidence": 0.88,
+        "role": "target",
+        "relevance": 0.9
+      }
+    ],
+    "events": [
+      {
+        "type": "mna",
+        "direction": "positive",
+        "importance": "high",
+        "confidence": 0.9,
+        "companyIds": [
+          900001,
+          900002
+        ]
+      }
+    ]
+  },
+  "expect": {
+    "presence": {
+      "id": "value",
+      "link": "value",
+      "source": "value",
+      "title": "value",
+      "summary": "null",
+      "language": "value",
+      "media": "value",
+      "publishedAt": "value",
+      "firstSeenAt": "value",
+      "revisedAt": "value",
+      "availableAt": "value",
+      "countries": "value",
+      "categories": "value",
+      "content": "null",
+      "sentiment": "value",
+      "companies": "value",
+      "events": "value",
+      "source.domain": "value",
+      "source.type": "null",
+      "sentiment.label": "value",
+      "sentiment.confidence": "value",
+      "companies[0].companyId": "value",
+      "companies[0].name": "value",
+      "companies[0].isin": "value",
+      "companies[0].primaryListing": "value",
+      "companies[0].confidence": "value",
+      "companies[0].role": "value",
+      "companies[0].relevance": "value",
+      "companies[0].primaryListing.ticker": "value",
+      "companies[0].primaryListing.mic": "value",
+      "companies[0].primaryListing.country": "value",
+      "companies[1].companyId": "value",
+      "companies[1].name": "value",
+      "companies[1].isin": "null",
+      "companies[1].primaryListing": "null",
+      "companies[1].confidence": "value",
+      "companies[1].role": "value",
+      "companies[1].relevance": "value",
+      "events[0].type": "value",
+      "events[0].direction": "value",
+      "events[0].importance": "value",
+      "events[0].confidence": "value",
+      "events[0].companyIds": "value"
+    }
+  }
+}

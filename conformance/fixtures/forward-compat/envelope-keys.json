@@ -1,0 +1,223 @@
+{
+  "id": "F-03",
+  "synthetic": true,
+  "note": "Synthetic: the server does not send these additions today. They model additive changes a v3 client must tolerate.",
+  "envelopes": [
+    {
+      "kind": "rest.search",
+      "wire": {
+        "articles": [
+          {
+            "id": "EU8JwpsZ8iJehuyPZjMqRz",
+            "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+            "source": {
+              "domain": "news.example.com",
+              "type": null
+            },
+            "title": "Example Robotics agrees to acquire Sample Sensors",
+            "summary": "Synthetic summary written for the finlight contract kit.",
+            "language": "en",
+            "media": [
+              {
+                "url": "https://img.example.com/fixtures/lead.jpg"
+              },
+              {
+                "url": "https://img.example.com/fixtures/second.jpg"
+              },
+              {
+                "url": "https://img.example.com/fixtures/third.jpg"
+              }
+            ],
+            "publishedAt": "2026-09-18T12:01:03.000Z",
+            "firstSeenAt": "2026-09-18T12:01:41.000Z",
+            "revisedAt": "2026-09-18T14:30:00.000Z",
+            "availableAt": "2026-09-18T12:03:05.123Z",
+            "countries": [
+              "US"
+            ],
+            "categories": [
+              "markets"
+            ],
+            "sentiment": {
+              "label": "positive",
+              "confidence": 0.9812
+            }
+          }
+        ],
+        "pagination": {
+          "limit": 1,
+          "returned": 1,
+          "hasMore": false,
+          "nextCursor": null,
+          "totalEstimate": 1
+        },
+        "meta": {
+          "tookMs": 12
+        }
+      },
+      "added": [
+        "pagination.totalEstimate",
+        "meta"
+      ]
+    },
+    {
+      "kind": "rest.article",
+      "wire": {
+        "article": {
+          "id": "EU8JwpsZ8iJehuyPZjMqRz",
+          "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Example Robotics agrees to acquire Sample Sensors",
+          "summary": "Synthetic summary written for the finlight contract kit.",
+          "language": "en",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/lead.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/second.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/third.jpg"
+            }
+          ],
+          "publishedAt": "2026-09-18T12:01:03.000Z",
+          "firstSeenAt": "2026-09-18T12:01:41.000Z",
+          "revisedAt": "2026-09-18T14:30:00.000Z",
+          "availableAt": "2026-09-18T12:03:05.123Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "positive",
+            "confidence": 0.9812
+          }
+        },
+        "meta": {
+          "cached": true
+        }
+      },
+      "added": [
+        "meta"
+      ]
+    },
+    {
+      "kind": "webhook",
+      "wire": {
+        "eventId": "evt_dNUmEJrbL57wBuN8Rc_4aj",
+        "event": "article.created",
+        "occurredAt": "2026-09-18T12:03:05.123Z",
+        "payloadVersion": 3,
+        "subscriptionId": "00000000-0000-4000-8000-000000000001",
+        "data": {
+          "id": "EU8JwpsZ8iJehuyPZjMqRz",
+          "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Example Robotics agrees to acquire Sample Sensors",
+          "summary": "Synthetic summary written for the finlight contract kit.",
+          "language": "en",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/lead.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/second.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/third.jpg"
+            }
+          ],
+          "publishedAt": "2026-09-18T12:01:03.000Z",
+          "firstSeenAt": "2026-09-18T12:01:41.000Z",
+          "revisedAt": "2026-09-18T14:30:00.000Z",
+          "availableAt": "2026-09-18T12:03:05.123Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "positive",
+            "confidence": 0.9812
+          }
+        },
+        "deliveryAttempt": 1
+      },
+      "added": [
+        "deliveryAttempt"
+      ]
+    },
+    {
+      "kind": "ws.article",
+      "wire": {
+        "event": "article.created",
+        "payloadVersion": 3,
+        "data": {
+          "id": "EU8JwpsZ8iJehuyPZjMqRz",
+          "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Example Robotics agrees to acquire Sample Sensors",
+          "summary": "Synthetic summary written for the finlight contract kit.",
+          "language": "en",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/lead.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/second.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/third.jpg"
+            }
+          ],
+          "publishedAt": "2026-09-18T12:01:03.000Z",
+          "firstSeenAt": "2026-09-18T12:01:41.000Z",
+          "revisedAt": "2026-09-18T14:30:00.000Z",
+          "availableAt": "2026-09-18T12:03:05.123Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "positive",
+            "confidence": 0.9812
+          }
+        },
+        "sequence": 17
+      },
+      "added": [
+        "sequence"
+      ]
+    },
+    {
+      "kind": "ws.control",
+      "wire": {
+        "event": "connection.pong",
+        "payloadVersion": 3,
+        "data": {
+          "t": 1,
+          "serverNow": 1763932800123,
+          "region": "eu"
+        }
+      },
+      "added": [
+        "data.region"
+      ]
+    }
+  ]
+}

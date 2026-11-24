@@ -1,0 +1,85 @@
+{
+  "id": "R-05",
+  "title": "articles.getByLink URL-encodes the link",
+  "sdk": {
+    "method": "articles.getByLink",
+    "args": {
+      "link": "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+      "include": [
+        "companies"
+      ]
+    }
+  },
+  "request": {
+    "method": "GET",
+    "path": "/v3/articles/by-link",
+    "query": "link=https%3A%2F%2Fnews.example.de%2Fwirtschaft%2Fbeispiel-werke-rekordquartal&include=companies",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "article": {
+        "id": "YkxUciPutwQkocuivOWP8W",
+        "link": "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+        "source": {
+          "domain": "news.example.de",
+          "type": null
+        },
+        "title": "Beispiel-Werke meldet Rekordquartal – Ümsatz +12 % (示例 · テスト)",
+        "summary": "Synthetische Zusammenfassung für das finlight-Vertragskit: äöü ß € 漢字.",
+        "language": "de",
+        "media": [
+          {
+            "url": "https://img.example.com/fixtures/de-lead.jpg"
+          }
+        ],
+        "publishedAt": "2026-11-23T20:58:00.000Z",
+        "firstSeenAt": "2026-11-23T20:59:12.000Z",
+        "revisedAt": null,
+        "availableAt": "2026-11-23T21:00:30.000Z",
+        "countries": [
+          "DE"
+        ],
+        "categories": [
+          "business"
+        ],
+        "sentiment": {
+          "label": "neutral",
+          "confidence": 0.6
+        },
+        "companies": [
+          {
+            "companyId": 900004,
+            "name": "Beispiel-Werke AG",
+            "isin": "ZZ0000000004",
+            "primaryListing": {
+              "ticker": "BSPW",
+              "mic": "XETR",
+              "country": "DE"
+            },
+            "confidence": 0.93,
+            "role": "subject",
+            "relevance": 0.99
+          }
+        ]
+      }
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.getByLink",
+      "args": [
+        "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+        [
+          "companies"
+        ]
+      ]
+    }
+  }
+}

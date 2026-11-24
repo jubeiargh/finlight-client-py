@@ -1,0 +1,52 @@
+{
+  "id": "S-13",
+  "title": "connection.error HANDSHAKE_FAILED",
+  "endpoint": "enriched",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1"
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.error",
+        "payloadVersion": 3,
+        "data": {
+          "code": "HANDSHAKE_FAILED",
+          "message": "Connection not found or handshake failed"
+        }
+      }
+    },
+    {
+      "step": "serverCloses",
+      "note": "the server drops the connection (API Gateway DeleteConnection)"
+    },
+    {
+      "step": "expect",
+      "outcome": "reconnect",
+      "resubscribe": true,
+      "backoff": true
+    }
+  ]
+}

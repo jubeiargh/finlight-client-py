@@ -1,0 +1,36 @@
+{
+  "id": "R-14",
+  "title": "rawStream() subscribe frame",
+  "sdk": {
+    "method": "rawStream",
+    "args": {
+      "query": "source:news.example.com",
+      "language": "en",
+      "includeUpdates": true
+    }
+  },
+  "frame": {
+    "payloadVersion": 3,
+    "query": "source:news.example.com",
+    "language": "en",
+    "includeUpdates": true,
+    "clientNonce": "c-kit-raw"
+  },
+  "rules": [
+    "no include key at all on raw (an include value is a terminal VALIDATION_FAILED)",
+    "payloadVersion is the JSON integer 3"
+  ],
+  "server": {
+    "frames": [
+      {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-raw"
+        }
+      }
+    ]
+  }
+}

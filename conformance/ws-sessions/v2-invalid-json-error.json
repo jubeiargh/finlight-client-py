@@ -1,0 +1,33 @@
+{
+  "id": "S-12",
+  "title": "Error for an unreadable message comes in v2 form",
+  "endpoint": "enriched",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": "{\"payloadVersion\": 3,",
+      "note": "a truncated frame (never sent by a correct SDK; shows the server answer)"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "action": "error",
+        "data": "Message processing failed"
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "logOnly"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "id": "S-06",
+  "title": "connection.error PING_ON_DEFAULT_ROUTE",
+  "endpoint": "enriched",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1"
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "type": "ping"
+      },
+      "note": "a malformed ping that reached $default"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.error",
+        "payloadVersion": 3,
+        "data": {
+          "code": "PING_ON_DEFAULT_ROUTE",
+          "message": "Ping messages should be sent to the ping route"
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "logOnly",
+      "code": "PING_ON_DEFAULT_ROUTE"
+    }
+  ]
+}

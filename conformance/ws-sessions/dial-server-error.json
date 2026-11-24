@@ -1,0 +1,24 @@
+{
+  "id": "S-26",
+  "title": "Dial refused: server error",
+  "endpoint": "enriched",
+  "note": "Most WebSocket libraries expose only the status of a refused upgrade; the body is given for those that expose it.",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_00000000000000000000000000000000000000000000000000000000000000a5"
+      },
+      "server": {
+        "status": 500,
+        "body": "{\"error\":\"Internal server error\"}"
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "reconnect",
+      "backoff": true
+    }
+  ]
+}

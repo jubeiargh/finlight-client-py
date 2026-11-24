@@ -1,0 +1,75 @@
+{
+  "id": "S-09",
+  "title": "connection.preempted, reason connection_limit (another connection took over)",
+  "endpoint": "enriched",
+  "note": "Frames as received by this connection when another one dials with x-takeover: true.",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1"
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "admitted"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.preempted",
+        "payloadVersion": 3,
+        "data": {
+          "reason": "connection_limit",
+          "newLeaseId": "00000000-0000-4000-8000-00000000beef",
+          "timestamp": 1795467845123
+        }
+      }
+    },
+    {
+      "step": "serverCloses",
+      "note": "the server drops the connection (API Gateway DeleteConnection)"
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "PreemptedError",
+      "reason": "connection_limit",
+      "newLeaseId": "00000000-0000-4000-8000-00000000beef"
+    },
+    {
+      "step": "expect",
+      "outcome": "noReconnect"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "R-06",
+  "title": "companies.search with q and mic",
+  "sdk": {
+    "method": "companies.search",
+    "args": {
+      "q": "XMPL",
+      "mic": "XNAS"
+    }
+  },
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies",
+    "query": "q=XMPL&mic=XNAS",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "companies": [
+        {
+          "companyId": 900001,
+          "name": "Example Robotics Inc.",
+          "country": "US",
+          "sector": "Industrials",
+          "industry": "Machinery",
+          "isins": [
+            "ZZ0000000001"
+          ],
+          "primaryListing": {
+            "ticker": "XMPL",
+            "mic": "XNAS",
+            "country": "US"
+          },
+          "listings": [
+            {
+              "ticker": "XMPL",
+              "mic": "XNAS",
+              "country": "US",
+              "active": true
+            },
+            {
+              "ticker": "XMR",
+              "mic": "XETR",
+              "country": "DE",
+              "active": false
+            }
+          ],
+          "updatedAt": "2026-09-01T00:00:00.000Z"
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "companies.lookup",
+      "args": [
+        {
+          "q": "XMPL",
+          "mic": "XNAS"
+        }
+      ]
+    }
+  }
+}

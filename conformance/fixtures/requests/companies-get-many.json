@@ -1,0 +1,85 @@
+{
+  "id": "R-07",
+  "title": "companies.getMany joins ids with commas",
+  "sdk": {
+    "method": "companies.getMany",
+    "args": {
+      "ids": [
+        900001,
+        900002
+      ]
+    }
+  },
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies",
+    "query": "ids=900001%2C900002",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "companies": [
+        {
+          "companyId": 900001,
+          "name": "Example Robotics Inc.",
+          "country": "US",
+          "sector": "Industrials",
+          "industry": "Machinery",
+          "isins": [
+            "ZZ0000000001"
+          ],
+          "primaryListing": {
+            "ticker": "XMPL",
+            "mic": "XNAS",
+            "country": "US"
+          },
+          "listings": [
+            {
+              "ticker": "XMPL",
+              "mic": "XNAS",
+              "country": "US",
+              "active": true
+            },
+            {
+              "ticker": "XMR",
+              "mic": "XETR",
+              "country": "DE",
+              "active": false
+            }
+          ],
+          "updatedAt": "2026-09-01T00:00:00.000Z"
+        },
+        {
+          "companyId": 900002,
+          "name": "Sample Sensors GmbH",
+          "country": "DE",
+          "sector": null,
+          "industry": null,
+          "isins": [],
+          "primaryListing": null,
+          "listings": [],
+          "updatedAt": "2026-08-15T00:00:00.000Z"
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "companies.lookup",
+      "args": [
+        {
+          "ids": [
+            900001,
+            900002
+          ]
+        }
+      ]
+    }
+  }
+}

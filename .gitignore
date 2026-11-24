@@ -162,3 +162,10 @@ cython_debug/
 #.idea/
 
 local
+# finlight v3
+.venv*/
+.ruff_cache/
+.mypy_cache/
+
+# the contract kit checksum list must be committed
+!conformance/MANIFEST

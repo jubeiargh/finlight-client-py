@@ -1,0 +1,113 @@
+{
+  "id": "D-08",
+  "title": "Non-ASCII text",
+  "channel": "enriched",
+  "include": [
+    "content",
+    "companies",
+    "events"
+  ],
+  "entitlements": {
+    "fullArticleAccess": true,
+    "sentimentAnalysisAccess": true,
+    "entityAccess": true,
+    "eventAccess": true
+  },
+  "wire": {
+    "id": "YkxUciPutwQkocuivOWP8W",
+    "link": "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+    "source": {
+      "domain": "news.example.de",
+      "type": null
+    },
+    "title": "Beispiel-Werke meldet Rekordquartal – Ümsatz +12 % (示例 · テスト)",
+    "summary": "Synthetische Zusammenfassung für das finlight-Vertragskit: äöü ß € 漢字.",
+    "language": "de",
+    "media": [
+      {
+        "url": "https://img.example.com/fixtures/de-lead.jpg"
+      }
+    ],
+    "publishedAt": "2026-11-23T20:58:00.000Z",
+    "firstSeenAt": "2026-11-23T20:59:12.000Z",
+    "revisedAt": null,
+    "availableAt": "2026-11-23T21:00:30.000Z",
+    "countries": [
+      "DE"
+    ],
+    "categories": [
+      "business"
+    ],
+    "content": "Synthetischer Text. Kein echter Artikel. Emoji-frei, aber mit Umlauten: Größe, Maß.",
+    "sentiment": {
+      "label": "neutral",
+      "confidence": 0.6
+    },
+    "companies": [
+      {
+        "companyId": 900004,
+        "name": "Beispiel-Werke AG",
+        "isin": "ZZ0000000004",
+        "primaryListing": {
+          "ticker": "BSPW",
+          "mic": "XETR",
+          "country": "DE"
+        },
+        "confidence": 0.93,
+        "role": "subject",
+        "relevance": 0.99
+      }
+    ],
+    "events": [
+      {
+        "type": "earnings",
+        "direction": "positive",
+        "importance": "medium",
+        "confidence": 0.81,
+        "companyIds": [
+          900004
+        ]
+      }
+    ]
+  },
+  "expect": {
+    "presence": {
+      "id": "value",
+      "link": "value",
+      "source": "value",
+      "title": "value",
+      "summary": "value",
+      "language": "value",
+      "media": "value",
+      "publishedAt": "value",
+      "firstSeenAt": "value",
+      "revisedAt": "null",
+      "availableAt": "value",
+      "countries": "value",
+      "categories": "value",
+      "content": "value",
+      "sentiment": "value",
+      "companies": "value",
+      "events": "value",
+      "source.domain": "value",
+      "source.type": "null",
+      "sentiment.label": "value",
+      "sentiment.confidence": "value",
+      "companies[0].companyId": "value",
+      "companies[0].name": "value",
+      "companies[0].isin": "value",
+      "companies[0].primaryListing": "value",
+      "companies[0].confidence": "value",
+      "companies[0].role": "value",
+      "companies[0].relevance": "value",
+      "companies[0].primaryListing.ticker": "value",
+      "companies[0].primaryListing.mic": "value",
+      "companies[0].primaryListing.country": "value",
+      "events[0].type": "value",
+      "events[0].direction": "value",
+      "events[0].importance": "value",
+      "events[0].confidence": "value",
+      "events[0].companyIds": "value"
+    }
+  }
+}

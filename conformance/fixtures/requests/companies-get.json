@@ -1,0 +1,65 @@
+{
+  "id": "R-08",
+  "title": "companies.get returns ETag and Cache-Control",
+  "sdk": {
+    "method": "companies.get",
+    "args": {
+      "companyId": 900001
+    }
+  },
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies/900001",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "etag": "\"80b88d6b9db35078140932ce62ec53d1b7b368bc\"",
+      "cache-control": "public, max-age=86400, stale-while-revalidate=604800"
+    },
+    "body": {
+      "company": {
+        "companyId": 900001,
+        "name": "Example Robotics Inc.",
+        "country": "US",
+        "sector": "Industrials",
+        "industry": "Machinery",
+        "isins": [
+          "ZZ0000000001"
+        ],
+        "primaryListing": {
+          "ticker": "XMPL",
+          "mic": "XNAS",
+          "country": "US"
+        },
+        "listings": [
+          {
+            "ticker": "XMPL",
+            "mic": "XNAS",
+            "country": "US",
+            "active": true
+          },
+          {
+            "ticker": "XMR",
+            "mic": "XETR",
+            "country": "DE",
+            "active": false
+          }
+        ],
+        "updatedAt": "2026-09-01T00:00:00.000Z"
+      }
+    }
+  },
+  "server": {
+    "received": {
+      "method": "companies.getById",
+      "args": [
+        900001
+      ]
+    }
+  }
+}

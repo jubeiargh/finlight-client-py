@@ -1,0 +1,347 @@
+{
+  "id": "R-02",
+  "title": "articles.search with every parameter",
+  "sdk": {
+    "method": "articles.search",
+    "args": {
+      "query": "eventType:mna AND companyCountry:US",
+      "sources": [
+        "news.example.com"
+      ],
+      "excludeSources": [
+        "archive.example.org"
+      ],
+      "from": "2026-11-01T00:00:00.000Z",
+      "to": "2026-11-23T00:00:00.000Z",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "tickers": [
+        "XMPL",
+        "XMPL@XNAS"
+      ],
+      "countries": [
+        "US"
+      ],
+      "categories": [
+        "markets"
+      ],
+      "hasContent": true,
+      "roles": [
+        "acquirer",
+        "target"
+      ],
+      "minRelevance": 0.5,
+      "eventTypes": [
+        "mna"
+      ],
+      "eventDirections": [
+        "positive"
+      ],
+      "minImportance": "medium",
+      "sectors": [
+        "Industrials"
+      ],
+      "companyCountries": [
+        "US"
+      ],
+      "exchanges": [
+        "XNAS"
+      ],
+      "orderBy": "availableAt",
+      "order": "asc",
+      "limit": 50,
+      "include": [
+        "content",
+        "companies",
+        "events"
+      ]
+    }
+  },
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "body": {
+      "query": "eventType:mna AND companyCountry:US",
+      "sources": [
+        "news.example.com"
+      ],
+      "excludeSources": [
+        "archive.example.org"
+      ],
+      "from": "2026-11-01T00:00:00.000Z",
+      "to": "2026-11-23T00:00:00.000Z",
+      "languages": [
+        "en",
+        "de"
+      ],
+      "tickers": [
+        "XMPL",
+        "XMPL@XNAS"
+      ],
+      "countries": [
+        "US"
+      ],
+      "categories": [
+        "markets"
+      ],
+      "hasContent": true,
+      "roles": [
+        "acquirer",
+        "target"
+      ],
+      "minRelevance": 0.5,
+      "eventTypes": [
+        "mna"
+      ],
+      "eventDirections": [
+        "positive"
+      ],
+      "minImportance": "medium",
+      "sectors": [
+        "Industrials"
+      ],
+      "companyCountries": [
+        "US"
+      ],
+      "exchanges": [
+        "XNAS"
+      ],
+      "orderBy": "availableAt",
+      "order": "asc",
+      "limit": 50,
+      "include": [
+        "content",
+        "companies",
+        "events"
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "articles": [
+        {
+          "id": "Hxa_Lf8rD0ZJin-0mSXPX8",
+          "link": "https://news.example.com/pages/2026/11/item-5",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Synthetic page item 5",
+          "summary": "Synthetic summary 5.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:00:00.000Z",
+          "firstSeenAt": "2026-11-22T10:00:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:00:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "content": null,
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          },
+          "companies": [],
+          "events": []
+        },
+        {
+          "id": "m2WAqcYHZ_QrSKfLHIxIb_",
+          "link": "https://news.example.com/pages/2026/11/item-4",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Synthetic page item 4",
+          "summary": "Synthetic summary 4.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:01:00.000Z",
+          "firstSeenAt": "2026-11-22T10:01:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:01:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "content": null,
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          },
+          "companies": [],
+          "events": []
+        },
+        {
+          "id": "xspVFGA3EcGWX2wFkaTsb4",
+          "link": "https://news.example.com/pages/2026/11/item-3",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Synthetic page item 3",
+          "summary": "Synthetic summary 3.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:02:00.000Z",
+          "firstSeenAt": "2026-11-22T10:02:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:02:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "content": null,
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          },
+          "companies": [],
+          "events": []
+        },
+        {
+          "id": "06Y2azQXhyoTwtkIcJ7HRk",
+          "link": "https://news.example.com/pages/2026/11/item-2",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Synthetic page item 2",
+          "summary": "Synthetic summary 2.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:03:00.000Z",
+          "firstSeenAt": "2026-11-22T10:03:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:03:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "content": null,
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          },
+          "companies": [],
+          "events": []
+        },
+        {
+          "id": "qsfjb98CFIi-mWEL1j5sxX",
+          "link": "https://news.example.com/pages/2026/11/item-1",
+          "source": {
+            "domain": "news.example.com",
+            "type": null
+          },
+          "title": "Synthetic page item 1",
+          "summary": "Synthetic summary 1.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:04:00.000Z",
+          "firstSeenAt": "2026-11-22T10:04:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:04:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "content": null,
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          },
+          "companies": [],
+          "events": []
+        }
+      ],
+      "pagination": {
+        "limit": 50,
+        "returned": 5,
+        "hasMore": false,
+        "nextCursor": null
+      }
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {
+          "query": "eventType:mna AND companyCountry:US",
+          "sources": [
+            "news.example.com"
+          ],
+          "excludeSources": [
+            "archive.example.org"
+          ],
+          "from": "2026-11-01T00:00:00.000Z",
+          "to": "2026-11-23T00:00:00.000Z",
+          "languages": [
+            "en",
+            "de"
+          ],
+          "tickers": [
+            "XMPL",
+            "XMPL@XNAS"
+          ],
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "hasContent": true,
+          "roles": [
+            "acquirer",
+            "target"
+          ],
+          "minRelevance": 0.5,
+          "eventTypes": [
+            "mna"
+          ],
+          "eventDirections": [
+            "positive"
+          ],
+          "minImportance": "medium",
+          "sectors": [
+            "Industrials"
+          ],
+          "companyCountries": [
+            "US"
+          ],
+          "exchanges": [
+            "XNAS"
+          ],
+          "orderBy": "availableAt",
+          "order": "asc",
+          "limit": 50,
+          "include": [
+            "content",
+            "companies",
+            "events"
+          ]
+        }
+      ]
+    }
+  }
+}

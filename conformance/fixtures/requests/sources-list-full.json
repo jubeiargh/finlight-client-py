@@ -1,0 +1,68 @@
+{
+  "id": "R-10",
+  "title": "sources.list with fullArticleAccess",
+  "sdk": {
+    "method": "sources.list",
+    "args": {}
+  },
+  "request": {
+    "method": "GET",
+    "path": "/v3/sources",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "sources": [
+        {
+          "domain": "archive.example.org",
+          "name": null,
+          "type": null,
+          "isDefault": false,
+          "isCustom": false,
+          "country": null,
+          "languages": [
+            "en"
+          ],
+          "hasContent": false
+        },
+        {
+          "domain": "custom.example.net",
+          "name": null,
+          "type": null,
+          "isDefault": false,
+          "isCustom": true,
+          "country": "US",
+          "languages": [
+            "en"
+          ],
+          "hasContent": true
+        },
+        {
+          "domain": "news.example.com",
+          "name": null,
+          "type": null,
+          "isDefault": true,
+          "isCustom": false,
+          "country": "GB",
+          "languages": [
+            "en",
+            "de"
+          ],
+          "hasContent": true
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "sources.list",
+      "args": []
+    }
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "id": "D-09",
+  "title": "Sentiment with a null label, event with null direction/importance/confidence, companies []",
+  "channel": "enriched",
+  "include": [
+    "content",
+    "companies",
+    "events"
+  ],
+  "entitlements": {
+    "fullArticleAccess": true,
+    "sentimentAnalysisAccess": true,
+    "entityAccess": true,
+    "eventAccess": true
+  },
+  "wire": {
+    "id": "y0P2GkNBM7G581a_W3EnPC",
+    "link": "https://news.example.com/briefs/2026/11/partial-sentiment",
+    "source": {
+      "domain": "news.example.com",
+      "type": null
+    },
+    "title": "Synthetic brief with a partial sentiment",
+    "summary": "Synthetic brief.",
+    "language": "en",
+    "media": [],
+    "publishedAt": "2026-11-20T08:00:00.000Z",
+    "firstSeenAt": "2026-11-20T08:00:30.000Z",
+    "revisedAt": null,
+    "availableAt": "2026-11-20T08:01:00.000Z",
+    "countries": [],
+    "categories": [],
+    "content": null,
+    "sentiment": {
+      "label": null,
+      "confidence": 0.42
+    },
+    "companies": [],
+    "events": [
+      {
+        "type": "macro",
+        "direction": null,
+        "importance": null,
+        "confidence": null,
+        "companyIds": []
+      }
+    ]
+  },
+  "expect": {
+    "presence": {
+      "id": "value",
+      "link": "value",
+      "source": "value",
+      "title": "value",
+      "summary": "value",
+      "language": "value",
+      "media": "empty",
+      "publishedAt": "value",
+      "firstSeenAt": "value",
+      "revisedAt": "null",
+      "availableAt": "value",
+      "countries": "empty",
+      "categories": "empty",
+      "content": "null",
+      "sentiment": "value",
+      "companies": "empty",
+      "events": "value",
+      "source.domain": "value",
+      "source.type": "null",
+      "sentiment.label": "null",
+      "sentiment.confidence": "value",
+      "events[0].type": "value",
+      "events[0].direction": "null",
+      "events[0].importance": "null",
+      "events[0].confidence": "null",
+      "events[0].companyIds": "empty"
+    }
+  }
+}

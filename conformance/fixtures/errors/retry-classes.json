@@ -1,0 +1,9 @@
+{
+  "note": "Client retry policy (one model for every SDK). Classified by status, code and, for 429, the limitType member.",
+  "classes": {
+    "never": "no retry: 400, 401, 403, 404, and 429 with limitType \"monthly\" or a limitType the client does not know",
+    "once-after-burst-wait": "one retry after Retry-After seconds, 10 when the header is missing (configurable, can be off): 429 with limitType \"burst\"",
+    "backoff": "exponential backoff: 5xx, non-JSON gateway errors and network errors, POST search included"
+  },
+  "requestId": "one X-Request-Id per logical call, reused on every retry"
+}
