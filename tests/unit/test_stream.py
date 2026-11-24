@@ -360,3 +360,153 @@ async def test_reconnect_reason_reports_the_last_dial_failure(ws_server: WsServe
     assert reconnects == [ReconnectInfo(None, "rate_limited", 2)]
     assert consumer.error is None
     await stream.close()
+
+
+async def _no_dial_until(server: WsServer, clock: FakeClock, before: int, seconds: float) -> None:
+    """Advance fake time to just before ``seconds``: no dial yet. Then let it pass and wait for the dial."""
+    await clock.advance(seconds - 0.01)
+    await settle(0.02)
+    assert len(server.dials) == before, f"dialed before {seconds} s"
+    await clock.advance(0.02)
+    for _ in range(200):
+        if len(server.dials) > before:
+            return
+        await asyncio.sleep(0.005)
+    raise AssertionError(f"no dial after {seconds} s")
+
+
+async def test_admitted_alone_does_not_reset_the_backoff(ws_server: WsServer, fake_clock: FakeClock) -> None:
+    # admitted comes before the subscribe is checked: a loop of admitted -> close must back off.
+    stream = make(ws_server, fake_clock).stream(query="x")
+    consumer = Consumer(stream)
+    for wait in (0.5, 1.0, 2.0):  # base 1 s, random 0 -> 0.5, 1, 2
+        conn = await ws_server.next_connection()
+        await conn.recv()
+        await conn.send(ADMITTED)
+        await settle()
+        await conn.close(1001)
+        await settle()
+        await _no_dial_until(ws_server, fake_clock, len(ws_server.dials), wait)
+    # An article proves the connection works: the backoff starts again from the base.
+    conn = await ws_server.next_connection()
+    await conn.recv()
+    await conn.send(ADMITTED)
+    await conn.send(frame("article.created", ARTICLE))
+    await consumer.wait_items(1)
+    await conn.close(1001)
+    await settle()
+    await _no_dial_until(ws_server, fake_clock, len(ws_server.dials), 0.5)
+    assert consumer.error is None
+    await stream.close()
+
+
+async def test_pong_resets_the_backoff(ws_server: WsServer, fake_clock: FakeClock) -> None:
+    ws_server.auto_pong = True
+    stream = make(ws_server, fake_clock, ping_interval=1.0).stream(query="x")
+    consumer = Consumer(stream)
+    for wait in (0.5, 1.0):
+        conn = await ws_server.next_connection()
+        await conn.recv()
+        await conn.close(1001)
+        await settle()
+        await _no_dial_until(ws_server, fake_clock, len(ws_server.dials), wait)
+    conn = await ws_server.next_connection()
+    await conn.recv()
+    await fake_clock.advance(1.0)  # ping, the server answers with a pong
+    await settle(0.05)
+    session = stream._sessions[-1]
+    assert session.last_pong > session.opened_at and not session.admitted
+    await conn.close(1001)
+    await settle()
+    await _no_dial_until(ws_server, fake_clock, len(ws_server.dials), 0.5)
+    assert consumer.error is None
+    await stream.close()
+
+
+async def _rotate(server: WsServer, clock: FakeClock, conn: Any) -> None:
+    await conn.recv()
+    await conn.send(ADMITTED)
+    await settle()
+    await clock.advance(115 * 60.0)
+    await settle(0.05)
+
+
+TOO_MANY = (403, '{"message":"Too many concurrent connections. Use x-takeover: true header to replace '
+                 'an existing connection."}')
+
+
+async def test_rotation_refused_frees_the_slot_and_dials_again_at_once(ws_server: WsServer,
+                                                                       fake_clock: FakeClock) -> None:
+    errors: list[Any] = []
+    reconnects: list[ReconnectInfo] = []
+    ws_server.auto_pong = True
+    stream = make(ws_server, fake_clock).stream(query="x", on_error=errors.append, on_reconnect=reconnects.append)
+    consumer = Consumer(stream)
+    old = await ws_server.next_connection()
+    ws_server.reject_plan.append(TOO_MANY)  # connection limit 1: the rotation dial is refused
+    await _rotate(ws_server, fake_clock, old)
+    await asyncio.wait_for(old.closed.wait(), 3)
+    new = await ws_server.next_connection()
+    assert (await new.recv())["query"] == "x"
+    assert len(ws_server.dials) == 3 and errors == []
+    for _ in range(100):
+        if reconnects:
+            break
+        await asyncio.sleep(0.005)
+    assert reconnects == [ReconnectInfo(None, "rotation", 2)]
+    assert consumer.error is None
+    await stream.close()
+
+
+async def test_rotation_refused_twice_waits_long(ws_server: WsServer, fake_clock: FakeClock) -> None:
+    errors: list[Any] = []
+    ws_server.auto_pong = True
+    stream = make(ws_server, fake_clock).stream(query="x", on_error=errors.append)
+    consumer = Consumer(stream)
+    old = await ws_server.next_connection()
+    ws_server.reject_plan.extend([TOO_MANY, TOO_MANY])
+    await _rotate(ws_server, fake_clock, old)
+    await asyncio.wait_for(old.closed.wait(), 3)
+    for _ in range(100):
+        if len(ws_server.dials) >= 3 and errors:
+            break
+        await asyncio.sleep(0.005)
+    assert len(ws_server.dials) == 3 and len(errors) == 1 and isinstance(errors[0], ForbiddenError)
+    await _no_dial_until(ws_server, fake_clock, 3, 60.0)
+    assert consumer.error is None
+    await stream.close()
+
+
+async def test_rotation_dial_network_failure_dials_again_at_once(ws_server: WsServer,
+                                                                 fake_clock: FakeClock) -> None:
+    from finlight_client.stream import _default_connect
+
+    errors: list[Any] = []
+    reconnects: list[ReconnectInfo] = []
+    fail_next = [False]
+    client: FinlightClient
+
+    async def connect(url: str, headers: list[tuple[str, str]]) -> Any:
+        if fail_next[0]:
+            fail_next[0] = False
+            raise OSError("connection reset")
+        return await _default_connect(url, headers, client.config)
+
+    ws_server.auto_pong = True
+    client = make(ws_server, fake_clock, websocket_connect=connect)
+    stream = client.stream(query="x", on_error=errors.append, on_reconnect=reconnects.append)
+    consumer = Consumer(stream)
+    old = await ws_server.next_connection()
+    fail_next[0] = True
+    await _rotate(ws_server, fake_clock, old)
+    await asyncio.wait_for(old.closed.wait(), 3)
+    new = await ws_server.next_connection()
+    assert (await new.recv())["query"] == "x"
+    assert errors == []
+    for _ in range(100):
+        if reconnects:
+            break
+        await asyncio.sleep(0.005)
+    assert reconnects == [ReconnectInfo(None, "rotation", 2)]
+    assert consumer.error is None
+    await stream.close()

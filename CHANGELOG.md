@@ -26,6 +26,12 @@ Contract kit: 3.0.0-rc.3.
   reconnect, duplicate filter, `takeover` option, typed terminal errors (`PreemptedError`).
   Hooks get info objects: `on_admitted(AdmittedInfo)`, `on_reconnect(ReconnectInfo)`,
   `on_error(FinlightError)`, `on_quota_wait(QuotaWaitInfo)`.
+- The reconnect backoff starts again from the base only after a pong or an article arrived on the
+  connection. `connection.admitted` alone does not reset it (it comes before the subscribe is checked).
+- Rotation opens the new connection before closing the old one. If that dial is refused or fails (for
+  example 403 at a connection limit of 1, a network error or a 5xx), the stream closes the old connection
+  and dials again at once, without `on_error`. Only a second failure waits as usual. A 401, missing
+  WebSocket access or an exhausted quota with `quota_reconnect=False` still end the stream.
 - When the monthly WebSocket quota is exhausted (dial 403 "quota exceeded" or `connection.preempted`
   with reason `quota_exceeded`), the stream tries again every hour until the quota allows it, logging a
   warning and calling `on_quota_wait` each time. On by default; `quota_reconnect=False` ends the stream

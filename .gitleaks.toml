@@ -1,0 +1,15 @@
+# The contract kit and the tests use synthetic keys and secrets
+# (sk_000..., 0123456789abcdef...). Everything else is scanned with the
+# default rules.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "synthetic test data"
+paths = [
+  '''^conformance/''',
+  '''^tests/''',
+]
+regexes = [
+  '''0123456789abcdef(0123456789abcdef){3}''',
+]

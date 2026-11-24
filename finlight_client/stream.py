@@ -267,6 +267,9 @@ class _Session:
         self.last_pong = self.opened_at
         self.last_ping = self.opened_at
         self.admitted = False
+        # Set by a pong or an article: the connection really works. Only then is the
+        # reconnect backoff reset (admitted comes before the subscribe is checked).
+        self.healthy = False
         self.retiring = False
         self.outcome: asyncio.Future[_Outcome] = asyncio.get_running_loop().create_future()
         self.tasks: list[asyncio.Task[Any]] = []
@@ -545,9 +548,11 @@ class FinlightStream:
                     continue
                 except Exception as exc:  # noqa: BLE001 - network failure on dial
                     if current is not None:
+                        # Rotation dial failed: free the slot first, then dial again at once.
                         await current.close(1000)
                         self._sessions.remove(current)
                         current = None
+                        continue
                     error = FinlightNetworkError(f"WebSocket dial failed: {type(exc).__name__}")
                     error.__cause__ = exc
                     reconnect_reason = "dial_failed"
@@ -593,7 +598,7 @@ class FinlightStream:
                     delay = self._quota_wait(outcome.error)
                     continue
                 reconnect_reason = outcome.reason
-                healthy = session.admitted and outcome.reason in ("watchdog", "closed", "rotation")
+                healthy = session.healthy and outcome.reason in ("watchdog", "closed", "rotation")
                 if healthy:
                     attempt = 0
                 if outcome.kind == "rotate":
@@ -640,6 +645,7 @@ class FinlightStream:
         ftype = frame.type
         if ftype == _frames.PONG:
             session.last_pong = clock.monotonic()
+            session.healthy = True
             if not frame.v2:
                 self._search_failed = 0  # a v3 pong means the subscribe was stored
             return
@@ -652,6 +658,7 @@ class FinlightStream:
             self._call_hook(self._on_admitted, info)
             return
         if ftype == _frames.ARTICLE:
+            session.healthy = True
             self._deliver_article(frame)
             return
         if ftype == _frames.PREEMPTED:
