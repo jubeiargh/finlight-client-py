@@ -1,0 +1,32 @@
+{
+  "id": "W-05",
+  "title": "Dashboard test webhook (evt_test…)",
+  "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "verify": {
+    "now": "2026-11-23T21:04:05.123Z",
+    "toleranceSeconds": 300
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://hooks.example.com/finlight",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Webhook-Signature": "sha256=747feed6bceaddfabea9403f07fa56fca081f790b304ba037e27f8d50080844d",
+      "X-Webhook-Timestamp": "2026-11-23T21:04:05.123Z"
+    },
+    "rawBody": "{\"eventId\":\"evt_test0123456789abcdef01\",\"event\":\"article.created\",\"occurredAt\":\"2026-11-23T21:04:05.123Z\",\"payloadVersion\":3,\"subscriptionId\":\"00000000-0000-4000-8000-00000000c0de\",\"data\":{\"id\":\"nsS5SyOXPe9MooDs95ZCvW\",\"link\":\"https://www.reuters.com/test-webhook\",\"source\":{\"domain\":\"www.reuters.com\",\"type\":\"newswire\"},\"title\":\"Test Webhook\",\"summary\":\"Lorem ipsum dolor sit amet\",\"language\":\"en\",\"media\":[],\"publishedAt\":\"2026-11-23T21:04:05.123Z\",\"firstSeenAt\":\"2026-11-23T21:04:05.123Z\",\"revisedAt\":null,\"availableAt\":\"2026-11-23T21:04:05.123Z\",\"countries\":[\"US\"],\"categories\":[\"markets\"],\"content\":\"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.\",\"sentiment\":{\"label\":\"neutral\",\"confidence\":0.9965},\"companies\":[{\"companyId\":1,\"name\":\"NVIDIA Corporation\",\"isin\":\"US67066G1040\",\"primaryListing\":{\"ticker\":\"NVDA\",\"mic\":\"XNAS\",\"country\":\"US\"},\"confidence\":0.92,\"role\":\"subject\",\"relevance\":0.95}],\"events\":[{\"type\":\"earnings\",\"direction\":\"positive\",\"importance\":\"high\",\"confidence\":0.9,\"companyIds\":[1]}]}}",
+    "rawBodyBase64": "eyJldmVudElkIjoiZXZ0X3Rlc3QwMTIzNDU2Nzg5YWJjZGVmMDEiLCJldmVudCI6ImFydGljbGUuY3JlYXRlZCIsIm9jY3VycmVkQXQiOiIyMDI2LTExLTIzVDIxOjA0OjA1LjEyM1oiLCJwYXlsb2FkVmVyc2lvbiI6Mywic3Vic2NyaXB0aW9uSWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMGMwZGUiLCJkYXRhIjp7ImlkIjoibnNTNVN5T1hQZTlNb29Eczk1WkN2VyIsImxpbmsiOiJodHRwczovL3d3dy5yZXV0ZXJzLmNvbS90ZXN0LXdlYmhvb2siLCJzb3VyY2UiOnsiZG9tYWluIjoid3d3LnJldXRlcnMuY29tIiwidHlwZSI6Im5ld3N3aXJlIn0sInRpdGxlIjoiVGVzdCBXZWJob29rIiwic3VtbWFyeSI6IkxvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0IiwibGFuZ3VhZ2UiOiJlbiIsIm1lZGlhIjpbXSwicHVibGlzaGVkQXQiOiIyMDI2LTExLTIzVDIxOjA0OjA1LjEyM1oiLCJmaXJzdFNlZW5BdCI6IjIwMjYtMTEtMjNUMjE6MDQ6MDUuMTIzWiIsInJldmlzZWRBdCI6bnVsbCwiYXZhaWxhYmxlQXQiOiIyMDI2LTExLTIzVDIxOjA0OjA1LjEyM1oiLCJjb3VudHJpZXMiOlsiVVMiXSwiY2F0ZWdvcmllcyI6WyJtYXJrZXRzIl0sImNvbnRlbnQiOiJMb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldCwgY29uc2V0ZXR1ciBzYWRpcHNjaW5nIGVsaXRyLCBzZWQgZGlhbSBub251bXkgZWlybW9kIHRlbXBvciBpbnZpZHVudCB1dCBsYWJvcmUgZXQgZG9sb3JlIG1hZ25hIGFsaXF1eWFtIGVyYXQsIHNlZCBkaWFtIHZvbHVwdHVhLiBBdCB2ZXJvIGVvcyBldCBhY2N1c2FtIGV0IGp1c3RvIGR1byBkb2xvcmVzIGV0IGVhIHJlYnVtLiBTdGV0IGNsaXRhIGthc2QgZ3ViZXJncmVuLCBubyBzZWEgdGFraW1hdGEgc2FuY3R1cyBlc3QgTG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQuIExvcmVtIGlwc3VtIGRvbG9yIHNpdCBhbWV0LCBjb25zZXRldHVyIHNhZGlwc2NpbmcgZWxpdHIsIHNlZCBkaWFtIG5vbnVteSBlaXJtb2QgdGVtcG9yIGludmlkdW50IHV0IGxhYm9yZSBldCBkb2xvcmUgbWFnbmEgYWxpcXV5YW0gZXJhdCwgc2VkIGRpYW0gdm9sdXB0dWEuIEF0IHZlcm8gZW9zIGV0IGFjY3VzYW0gZXQganVzdG8gZHVvIGRvbG9yZXMgZXQgZWEgcmVidW0uIFN0ZXQgY2xpdGEga2FzZCBndWJlcmdyZW4sIG5vIHNlYSB0YWtpbWF0YSBzYW5jdHVzIGVzdCBMb3JlbSBpcHN1bSBkb2xvciBzaXQgYW1ldC4iLCJzZW50aW1lbnQiOnsibGFiZWwiOiJuZXV0cmFsIiwiY29uZmlkZW5jZSI6MC45OTY1fSwiY29tcGFuaWVzIjpbeyJjb21wYW55SWQiOjEsIm5hbWUiOiJOVklESUEgQ29ycG9yYXRpb24iLCJpc2luIjoiVVM2NzA2NkcxMDQwIiwicHJpbWFyeUxpc3RpbmciOnsidGlja2VyIjoiTlZEQSIsIm1pYyI6IlhOQVMiLCJjb3VudHJ5IjoiVVMifSwiY29uZmlkZW5jZSI6MC45Miwicm9sZSI6InN1YmplY3QiLCJyZWxldmFuY2UiOjAuOTV9XSwiZXZlbnRzIjpbeyJ0eXBlIjoiZWFybmluZ3MiLCJkaXJlY3Rpb24iOiJwb3NpdGl2ZSIsImltcG9ydGFuY2UiOiJoaWdoIiwiY29uZmlkZW5jZSI6MC45LCJjb21wYW55SWRzIjpbMV19XX19"
+  },
+  "expect": {
+    "signatureValid": true,
+    "outcome": "event",
+    "event": {
+      "eventId": "evt_test0123456789abcdef01",
+      "event": "article.created",
+      "occurredAt": "2026-11-23T21:04:05.123Z",
+      "subscriptionId": "00000000-0000-4000-8000-00000000c0de",
+      "isTest": true,
+      "link": "https://www.reuters.com/test-webhook"
+    }
+  }
+}

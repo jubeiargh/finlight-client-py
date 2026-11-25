@@ -1,0 +1,50 @@
+{
+  "id": "E-03",
+  "title": "Unknown field in the query language",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e03"
+    },
+    "body": {
+      "query": "colour:blue"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "1 request field is not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-kit-e03",
+      "errors": [
+        {
+          "field": "badQuery",
+          "issue": "Unknown field \"colour\". Allowed fields: category, companyCount, companyCountry, companyId, content, country, eventConfidence, eventCount, eventDirection, eventImportance, eventType, exchange, isin, openfigi, optInSources, publishedAt, relevance, role, sector, sentiment, source, sourceType, summary, ticker, title. To search for the literal text, quote it: \"colour:blue\"."
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {
+          "query": "colour:blue"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

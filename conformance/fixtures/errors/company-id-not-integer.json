@@ -1,0 +1,37 @@
+{
+  "id": "E-09",
+  "title": "Non-integer companyId in the path",
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies/abc",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e09"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "1 request field is not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-kit-e09",
+      "errors": [
+        {
+          "field": "companyId",
+          "issue": "companyId has to be a whole number."
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

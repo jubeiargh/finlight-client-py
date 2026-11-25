@@ -1,0 +1,8 @@
+include README.md LICENSE CHANGELOG.md
+include finlight_client/py.typed
+prune conformance
+prune local
+prune tests
+prune examples
+prune scripts
+global-exclude *.py[cod] __pycache__

@@ -1,0 +1,51 @@
+{
+  "id": "E-07",
+  "title": "companies.search with q and ids",
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies",
+    "query": "q=XMPL&ids=900001",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e07"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "1 request field is not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-kit-e07",
+      "errors": [
+        {
+          "field": "ids",
+          "issue": "q and ids cannot be combined. Use one of the two."
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "companies.lookup",
+      "args": [
+        {
+          "q": "XMPL",
+          "ids": [
+            900001
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

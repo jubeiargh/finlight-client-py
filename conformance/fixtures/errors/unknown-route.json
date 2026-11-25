@@ -1,0 +1,28 @@
+{
+  "id": "E-22",
+  "title": "Unknown route under /v3 (NestJS fallback form)",
+  "request": {
+    "method": "GET",
+    "path": "/v3/does-not-exist",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e22"
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "message": "Cannot GET /v3/does-not-exist",
+      "error": "Not Found",
+      "statusCode": 404
+    }
+  },
+  "expect": {
+    "code": "NESTJS_FALLBACK",
+    "apiKind": "not_found",
+    "retry": "never"
+  }
+}

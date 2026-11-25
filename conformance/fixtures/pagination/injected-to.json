@@ -1,0 +1,56 @@
+{
+  "id": "P-03",
+  "title": "Adding \"to\" on page 2 breaks the cursor",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "body": {
+      "sources": [
+        "news.example.com",
+        "news.example.de"
+      ],
+      "limit": 2,
+      "to": "2026-11-23T21:04:05.123Z",
+      "cursor": "eyJ2IjoxLCJrIjpbMTc5NTM0MTc4MDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3BhZ2VzLzIwMjYvMTEvaXRlbS0yIl0sIm8iOiJwdWJsaXNoZWRBdDpkZXNjIiwiZiI6IjE5MjFkYmQzIn0"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/cursor-mismatch",
+      "title": "Cursor mismatch",
+      "status": 400,
+      "detail": "The cursor was issued for a different set of filters. Start a new search without a cursor.",
+      "code": "CURSOR_MISMATCH",
+      "requestId": "req_00000000-0000-0000-0000-000000000000",
+      "errors": [
+        {
+          "field": "cursor",
+          "issue": "The cursor was issued for a different set of filters. Start a new search without a cursor."
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {
+          "sources": [
+            "news.example.com",
+            "news.example.de"
+          ],
+          "limit": 2,
+          "to": "2026-11-23T21:04:05.123Z",
+          "cursor": "eyJ2IjoxLCJrIjpbMTc5NTM0MTc4MDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3BhZ2VzLzIwMjYvMTEvaXRlbS0yIl0sIm8iOiJwdWJsaXNoZWRBdDpkZXNjIiwiZiI6IjE5MjFkYmQzIn0"
+        }
+      ]
+    }
+  }
+}

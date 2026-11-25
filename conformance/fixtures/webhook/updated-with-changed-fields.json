@@ -1,0 +1,36 @@
+{
+  "id": "W-02",
+  "title": "article.updated with changedFields",
+  "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "verify": {
+    "now": "2026-11-23T21:04:05.123Z",
+    "toleranceSeconds": 300
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://hooks.example.com/finlight",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Webhook-Signature": "sha256=1f55f5842cc2a2609170ef7637496a929e8f323997642b54e35030a92473e15e",
+      "X-Webhook-Timestamp": "2026-11-23T21:04:05.123Z"
+    },
+    "rawBody": "{\"eventId\":\"evt_JlUwuzWmj0HeFOlvjAFkTo\",\"event\":\"article.updated\",\"occurredAt\":\"2026-09-18T14:31:10.000Z\",\"payloadVersion\":3,\"subscriptionId\":\"00000000-0000-4000-8000-00000000c0de\",\"changedFields\":[\"title\",\"content\"],\"data\":{\"id\":\"EU8JwpsZ8iJehuyPZjMqRz\",\"link\":\"https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors\",\"source\":{\"domain\":\"news.example.com\",\"type\":\"financial_media\"},\"title\":\"Example Robotics agrees to acquire Sample Sensors\",\"summary\":\"Synthetic summary written for the finlight contract kit.\",\"language\":\"en\",\"media\":[{\"url\":\"https://img.example.com/fixtures/lead.jpg\"},{\"url\":\"https://img.example.com/fixtures/second.jpg\"},{\"url\":\"https://img.example.com/fixtures/third.jpg\"}],\"publishedAt\":\"2026-09-18T12:01:03.000Z\",\"firstSeenAt\":\"2026-09-18T12:01:41.000Z\",\"revisedAt\":\"2026-09-18T14:30:00.000Z\",\"availableAt\":\"2026-09-18T12:03:05.123Z\",\"countries\":[\"US\"],\"categories\":[\"markets\"],\"content\":\"Synthetic body text for the finlight contract kit. It is not a real article.\",\"sentiment\":{\"label\":\"positive\",\"confidence\":0.9812},\"companies\":[{\"companyId\":900001,\"name\":\"Example Robotics Inc.\",\"isin\":\"ZZ0000000001\",\"primaryListing\":{\"ticker\":\"XMPL\",\"mic\":\"XNAS\",\"country\":\"US\"},\"confidence\":0.97,\"role\":\"acquirer\",\"relevance\":0.95},{\"companyId\":900002,\"name\":\"Sample Sensors GmbH\",\"isin\":null,\"primaryListing\":null,\"confidence\":0.88,\"role\":\"target\",\"relevance\":0.9}],\"events\":[{\"type\":\"mna\",\"direction\":\"positive\",\"importance\":\"high\",\"confidence\":0.9,\"companyIds\":[900001,900002]}]}}",
+    "rawBodyBase64": "eyJldmVudElkIjoiZXZ0X0psVXd1eldtajBIZUZPbHZqQUZrVG8iLCJldmVudCI6ImFydGljbGUudXBkYXRlZCIsIm9jY3VycmVkQXQiOiIyMDI2LTA5LTE4VDE0OjMxOjEwLjAwMFoiLCJwYXlsb2FkVmVyc2lvbiI6Mywic3Vic2NyaXB0aW9uSWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMGMwZGUiLCJjaGFuZ2VkRmllbGRzIjpbInRpdGxlIiwiY29udGVudCJdLCJkYXRhIjp7ImlkIjoiRVU4Sndwc1o4aUplaHV5UFpqTXFSeiIsImxpbmsiOiJodHRwczovL25ld3MuZXhhbXBsZS5jb20vbWFya2V0cy8yMDI2LzA5LzE4L2V4YW1wbGUtcm9ib3RpY3MtdG8tYWNxdWlyZS1zYW1wbGUtc2Vuc29ycyIsInNvdXJjZSI6eyJkb21haW4iOiJuZXdzLmV4YW1wbGUuY29tIiwidHlwZSI6ImZpbmFuY2lhbF9tZWRpYSJ9LCJ0aXRsZSI6IkV4YW1wbGUgUm9ib3RpY3MgYWdyZWVzIHRvIGFjcXVpcmUgU2FtcGxlIFNlbnNvcnMiLCJzdW1tYXJ5IjoiU3ludGhldGljIHN1bW1hcnkgd3JpdHRlbiBmb3IgdGhlIGZpbmxpZ2h0IGNvbnRyYWN0IGtpdC4iLCJsYW5ndWFnZSI6ImVuIiwibWVkaWEiOlt7InVybCI6Imh0dHBzOi8vaW1nLmV4YW1wbGUuY29tL2ZpeHR1cmVzL2xlYWQuanBnIn0seyJ1cmwiOiJodHRwczovL2ltZy5leGFtcGxlLmNvbS9maXh0dXJlcy9zZWNvbmQuanBnIn0seyJ1cmwiOiJodHRwczovL2ltZy5leGFtcGxlLmNvbS9maXh0dXJlcy90aGlyZC5qcGcifV0sInB1Ymxpc2hlZEF0IjoiMjAyNi0wOS0xOFQxMjowMTowMy4wMDBaIiwiZmlyc3RTZWVuQXQiOiIyMDI2LTA5LTE4VDEyOjAxOjQxLjAwMFoiLCJyZXZpc2VkQXQiOiIyMDI2LTA5LTE4VDE0OjMwOjAwLjAwMFoiLCJhdmFpbGFibGVBdCI6IjIwMjYtMDktMThUMTI6MDM6MDUuMTIzWiIsImNvdW50cmllcyI6WyJVUyJdLCJjYXRlZ29yaWVzIjpbIm1hcmtldHMiXSwiY29udGVudCI6IlN5bnRoZXRpYyBib2R5IHRleHQgZm9yIHRoZSBmaW5saWdodCBjb250cmFjdCBraXQuIEl0IGlzIG5vdCBhIHJlYWwgYXJ0aWNsZS4iLCJzZW50aW1lbnQiOnsibGFiZWwiOiJwb3NpdGl2ZSIsImNvbmZpZGVuY2UiOjAuOTgxMn0sImNvbXBhbmllcyI6W3siY29tcGFueUlkIjo5MDAwMDEsIm5hbWUiOiJFeGFtcGxlIFJvYm90aWNzIEluYy4iLCJpc2luIjoiWlowMDAwMDAwMDAxIiwicHJpbWFyeUxpc3RpbmciOnsidGlja2VyIjoiWE1QTCIsIm1pYyI6IlhOQVMiLCJjb3VudHJ5IjoiVVMifSwiY29uZmlkZW5jZSI6MC45Nywicm9sZSI6ImFjcXVpcmVyIiwicmVsZXZhbmNlIjowLjk1fSx7ImNvbXBhbnlJZCI6OTAwMDAyLCJuYW1lIjoiU2FtcGxlIFNlbnNvcnMgR21iSCIsImlzaW4iOm51bGwsInByaW1hcnlMaXN0aW5nIjpudWxsLCJjb25maWRlbmNlIjowLjg4LCJyb2xlIjoidGFyZ2V0IiwicmVsZXZhbmNlIjowLjl9XSwiZXZlbnRzIjpbeyJ0eXBlIjoibW5hIiwiZGlyZWN0aW9uIjoicG9zaXRpdmUiLCJpbXBvcnRhbmNlIjoiaGlnaCIsImNvbmZpZGVuY2UiOjAuOSwiY29tcGFueUlkcyI6WzkwMDAwMSw5MDAwMDJdfV19fQ=="
+  },
+  "expect": {
+    "signatureValid": true,
+    "outcome": "event",
+    "event": {
+      "eventId": "evt_JlUwuzWmj0HeFOlvjAFkTo",
+      "event": "article.updated",
+      "occurredAt": "2026-09-18T14:31:10.000Z",
+      "subscriptionId": "00000000-0000-4000-8000-00000000c0de",
+      "isTest": false,
+      "changedFields": [
+        "title",
+        "content"
+      ],
+      "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors"
+    }
+  }
+}

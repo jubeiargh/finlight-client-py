@@ -1,0 +1,83 @@
+{
+  "id": "S-08",
+  "title": "VALIDATION_FAILED for include on raw",
+  "endpoint": "raw",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me/raw",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "query": "source:news.example.com",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-raw",
+        "sourceTypes": [
+          "newswire",
+          "financial_media"
+        ],
+        "excludeSourceTypes": [
+          "blog"
+        ],
+        "include": [
+          "content"
+        ]
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-raw"
+        }
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.error",
+        "payloadVersion": 3,
+        "data": {
+          "code": "VALIDATION_FAILED",
+          "message": "Invalid subscription message",
+          "details": [
+            {
+              "field": "include",
+              "constraints": {
+                "raw": "raw delivers the skeleton only: content"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "serverCloses",
+      "note": "the server drops the connection (API Gateway DeleteConnection)"
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "FinlightApiError",
+      "apiKind": "validation_failed",
+      "code": "VALIDATION_FAILED"
+    },
+    {
+      "step": "expect",
+      "outcome": "noReconnect"
+    }
+  ]
+}

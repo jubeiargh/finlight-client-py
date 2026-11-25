@@ -1,0 +1,29 @@
+{
+  "id": "S-28",
+  "title": "Dial refused: WebSocket quota exhausted, with quotaReconnect turned off",
+  "endpoint": "enriched",
+  "clientConfig": {
+    "quotaReconnect": false
+  },
+  "note": "Most WebSocket libraries expose only the status of a refused upgrade; the body is given for those that expose it.",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_00000000000000000000000000000000000000000000000000000000000000a3"
+      },
+      "server": {
+        "status": 403,
+        "body": "{\"message\":\"WebSocket quota exceeded for the current period\"}"
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "FinlightApiError",
+      "apiKind": "forbidden",
+      "status": 403
+    }
+  ]
+}

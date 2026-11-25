@@ -1,0 +1,27 @@
+{
+  "id": "E-24",
+  "title": "Non-JSON error body from a gateway",
+  "synthetic": true,
+  "note": "Hand-written: produced by infrastructure in front of the API, not by server code.",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e24"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 502,
+    "headers": {
+      "content-type": "text/html"
+    },
+    "body": "<html><head><title>502 Bad Gateway</title></head><body>Bad Gateway</body></html>"
+  },
+  "expect": {
+    "code": null,
+    "apiKind": "other",
+    "retry": "backoff"
+  }
+}

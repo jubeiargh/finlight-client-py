@@ -1,0 +1,32 @@
+{
+  "id": "E-14",
+  "title": "Company lookup without entityAccess",
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies",
+    "query": "q=XMPL",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000002",
+      "X-Request-Id": "req-kit-e14"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/forbidden",
+      "title": "Forbidden",
+      "status": 403,
+      "detail": "Company master data requires the entityAccess entitlement.",
+      "code": "FORBIDDEN",
+      "requestId": "req-kit-e14"
+    }
+  },
+  "expect": {
+    "code": "FORBIDDEN",
+    "apiKind": "forbidden",
+    "retry": "never"
+  }
+}

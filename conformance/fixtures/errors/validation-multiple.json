@@ -1,0 +1,61 @@
+{
+  "id": "E-02",
+  "title": "Several invalid fields at once",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e02"
+    },
+    "body": {
+      "limit": 500,
+      "order": "DESC",
+      "include": [
+        "contnet"
+      ]
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "3 request fields are not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-kit-e02",
+      "errors": [
+        {
+          "field": "order",
+          "issue": "order must be one of the following values: asc, desc",
+          "allowedValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        {
+          "field": "limit",
+          "issue": "limit must not be greater than 100"
+        },
+        {
+          "field": "include",
+          "issue": "each value in include must be one of the following values: content, companies, events",
+          "allowedValues": [
+            "content",
+            "companies",
+            "events"
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "id": "D-07",
+  "title": "Legacy values delivered as they are",
+  "channel": "enriched",
+  "include": [
+    "content",
+    "companies",
+    "events"
+  ],
+  "entitlements": {
+    "fullArticleAccess": true,
+    "sentimentAnalysisAccess": true,
+    "entityAccess": true,
+    "eventAccess": true
+  },
+  "wire": {
+    "id": "LiakFVDmj_hB3bFFqFiTZ6",
+    "link": "https://archive.example.org/2019/legacy-item-0001",
+    "source": {
+      "domain": "archive.example.org",
+      "type": null
+    },
+    "title": "Synthetic legacy item",
+    "summary": null,
+    "language": "en",
+    "media": [],
+    "publishedAt": "1970-01-01T00:00:00.000Z",
+    "firstSeenAt": null,
+    "revisedAt": null,
+    "availableAt": null,
+    "countries": [],
+    "categories": [],
+    "content": null,
+    "sentiment": null,
+    "companies": [
+      {
+        "companyId": 900003,
+        "name": "Legacy Holdings plc",
+        "isin": null,
+        "primaryListing": {
+          "ticker": "LGCY",
+          "mic": "XLON",
+          "country": "GB"
+        },
+        "confidence": 0.71,
+        "role": null,
+        "relevance": null
+      }
+    ],
+    "events": []
+  },
+  "expect": {
+    "presence": {
+      "id": "value",
+      "link": "value",
+      "source": "value",
+      "title": "value",
+      "summary": "null",
+      "language": "value",
+      "media": "empty",
+      "publishedAt": "value",
+      "firstSeenAt": "null",
+      "revisedAt": "null",
+      "availableAt": "null",
+      "countries": "empty",
+      "categories": "empty",
+      "content": "null",
+      "sentiment": "null",
+      "companies": "value",
+      "events": "empty",
+      "source.domain": "value",
+      "source.type": "null",
+      "companies[0].companyId": "value",
+      "companies[0].name": "value",
+      "companies[0].isin": "null",
+      "companies[0].primaryListing": "value",
+      "companies[0].confidence": "value",
+      "companies[0].role": "null",
+      "companies[0].relevance": "null",
+      "companies[0].primaryListing.ticker": "value",
+      "companies[0].primaryListing.mic": "value",
+      "companies[0].primaryListing.country": "value"
+    }
+  }
+}

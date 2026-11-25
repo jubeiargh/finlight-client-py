@@ -1,0 +1,301 @@
+{
+  "note": "Request vocabularies are validated strictly by the server (400 with allowedValues). Response vocabularies are open: treat every list marked open as \"known values today\" and keep unknown strings.",
+  "payloadVersion": 3,
+  "request": {
+    "include": {
+      "values": [
+        "content",
+        "companies",
+        "events"
+      ],
+      "closed": true
+    },
+    "orderBy": {
+      "values": [
+        "publishedAt",
+        "firstSeenAt",
+        "revisedAt",
+        "availableAt"
+      ],
+      "closed": true,
+      "default": "publishedAt"
+    },
+    "order": {
+      "values": [
+        "asc",
+        "desc"
+      ],
+      "closed": true,
+      "default": "desc"
+    },
+    "roles": {
+      "values": [
+        "acquirer",
+        "target",
+        "seller",
+        "defendant",
+        "subject",
+        "counterparty",
+        "supplier",
+        "customer",
+        "competitor",
+        "mentioned"
+      ],
+      "closed": true
+    },
+    "eventTypes": {
+      "values": [
+        "earnings",
+        "guidance",
+        "mna",
+        "ipo_listing",
+        "capital_action",
+        "rating_action",
+        "management_change",
+        "legal",
+        "regulatory",
+        "bankruptcy_distress",
+        "product_partnership",
+        "investment_expansion",
+        "operational_incident",
+        "labor_restructuring",
+        "macro",
+        "geopolitics"
+      ],
+      "closed": true
+    },
+    "eventDirections": {
+      "values": [
+        "positive",
+        "negative",
+        "neutral",
+        "unclear"
+      ],
+      "closed": true
+    },
+    "minImportance": {
+      "values": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "closed": true,
+      "ordinal": true
+    },
+    "sourceTypes": {
+      "values": [
+        "newswire",
+        "press_release",
+        "financial_media",
+        "general_media",
+        "aggregator",
+        "blog",
+        "government"
+      ],
+      "closed": true
+    },
+    "excludeSourceTypes": {
+      "values": [
+        "newswire",
+        "press_release",
+        "financial_media",
+        "general_media",
+        "aggregator",
+        "blog",
+        "government"
+      ],
+      "closed": true
+    },
+    "limit": {
+      "min": 1,
+      "max": 100,
+      "default": 20
+    },
+    "languagesDefault": [
+      "en"
+    ],
+    "companiesMaxIds": 10
+  },
+  "response": {
+    "roles": {
+      "values": [
+        "acquirer",
+        "target",
+        "seller",
+        "defendant",
+        "subject",
+        "counterparty",
+        "supplier",
+        "customer",
+        "competitor",
+        "mentioned"
+      ],
+      "open": true
+    },
+    "eventTypes": {
+      "values": [
+        "earnings",
+        "guidance",
+        "mna",
+        "ipo_listing",
+        "capital_action",
+        "rating_action",
+        "management_change",
+        "legal",
+        "regulatory",
+        "bankruptcy_distress",
+        "product_partnership",
+        "investment_expansion",
+        "operational_incident",
+        "labor_restructuring",
+        "macro",
+        "geopolitics"
+      ],
+      "open": true
+    },
+    "eventDirections": {
+      "values": [
+        "positive",
+        "negative",
+        "neutral",
+        "unclear"
+      ],
+      "open": true
+    },
+    "importance": {
+      "values": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "open": true,
+      "ordinal": true
+    },
+    "sentimentLabels": {
+      "values": [
+        "positive",
+        "negative",
+        "neutral"
+      ],
+      "open": true
+    },
+    "sourceTypes": {
+      "values": [
+        "newswire",
+        "press_release",
+        "financial_media",
+        "general_media",
+        "aggregator",
+        "blog",
+        "government"
+      ],
+      "open": true,
+      "note": "source.type and /v3/sources type; null when unclassified"
+    }
+  },
+  "websocket": {
+    "events": {
+      "values": [
+        "article.created",
+        "article.updated",
+        "connection.admitted",
+        "connection.pong",
+        "connection.preempted",
+        "connection.error"
+      ],
+      "open": true
+    },
+    "articleEvents": {
+      "values": [
+        "article.created",
+        "article.updated"
+      ],
+      "open": true
+    },
+    "connectionEvents": {
+      "values": [
+        "connection.admitted",
+        "connection.pong",
+        "connection.preempted",
+        "connection.error"
+      ],
+      "open": true
+    },
+    "connectionErrorCodes": {
+      "values": [
+        "PING_ON_DEFAULT_ROUTE",
+        "HANDSHAKE_FAILED",
+        "VALIDATION_FAILED",
+        "SEARCH_FAILED",
+        "INTERNAL_ERROR"
+      ],
+      "open": true
+    },
+    "preemptReasons": {
+      "values": [
+        "connection_limit",
+        "quota_exceeded"
+      ],
+      "open": true
+    },
+    "heartbeatMs": 25000,
+    "staleMs": 60000,
+    "maxLifetimeMs": 7200000
+  },
+  "webhook": {
+    "events": {
+      "values": [
+        "article.created",
+        "article.updated"
+      ],
+      "open": true
+    }
+  },
+  "problemCodes": {
+    "values": [
+      {
+        "code": "VALIDATION_FAILED",
+        "type": "https://docs.finlight.me/errors/validation-failed"
+      },
+      {
+        "code": "CURSOR_INVALID",
+        "type": "https://docs.finlight.me/errors/cursor-invalid"
+      },
+      {
+        "code": "CURSOR_MISMATCH",
+        "type": "https://docs.finlight.me/errors/cursor-mismatch"
+      },
+      {
+        "code": "UNAUTHORIZED",
+        "type": "https://docs.finlight.me/errors/unauthorized"
+      },
+      {
+        "code": "FORBIDDEN",
+        "type": "https://docs.finlight.me/errors/forbidden"
+      },
+      {
+        "code": "NOT_FOUND",
+        "type": "https://docs.finlight.me/errors/not-found"
+      },
+      {
+        "code": "RATE_LIMITED",
+        "type": "https://docs.finlight.me/errors/rate-limited"
+      },
+      {
+        "code": "INTERNAL_ERROR",
+        "type": "https://docs.finlight.me/errors/internal-error"
+      }
+    ],
+    "open": true
+  },
+  "limitTypes": {
+    "values": [
+      "monthly",
+      "burst"
+    ],
+    "open": true,
+    "note": "problem member limitType on 429 RATE_LIMITED; burst also carries a Retry-After header (seconds)"
+  }
+}

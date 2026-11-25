@@ -1,0 +1,26 @@
+{
+  "id": "S-20",
+  "title": "Dial refused: invalid API key",
+  "endpoint": "enriched",
+  "note": "Most WebSocket libraries expose only the status of a refused upgrade; the body is given for those that expose it.",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_00000000000000000000000000000000000000000000000000000000000000ff"
+      },
+      "server": {
+        "status": 401,
+        "body": "{\"message\":\"Invalid API key\"}"
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "FinlightApiError",
+      "apiKind": "unauthorized",
+      "status": 401
+    }
+  ]
+}

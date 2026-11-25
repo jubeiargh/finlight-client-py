@@ -1,0 +1,33 @@
+{
+  "id": "E-18",
+  "title": "Monthly token limit reached",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000003",
+      "X-Request-Id": "req-kit-e18"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/rate-limited",
+      "title": "Too many requests",
+      "status": 429,
+      "detail": "Throttling Exception: Exceeded token limit of 1000 for the current period.",
+      "code": "RATE_LIMITED",
+      "requestId": "req-kit-e18",
+      "limitType": "monthly"
+    }
+  },
+  "expect": {
+    "code": "RATE_LIMITED",
+    "apiKind": "rate_limited",
+    "retry": "never"
+  }
+}

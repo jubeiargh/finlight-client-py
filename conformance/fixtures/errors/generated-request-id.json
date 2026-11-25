@@ -1,0 +1,39 @@
+{
+  "id": "E-23",
+  "title": "No X-Request-Id sent: the server generates one",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "body": {
+      "limit": 0
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "1 request field is not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req_00000000-0000-0000-0000-000000000000",
+      "errors": [
+        {
+          "field": "limit",
+          "issue": "limit must not be less than 1"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

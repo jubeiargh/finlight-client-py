@@ -1,0 +1,89 @@
+{
+  "id": "D-06",
+  "title": "events and companies requested, entityAccess missing",
+  "channel": "enriched",
+  "include": [
+    "companies",
+    "events"
+  ],
+  "entitlements": {
+    "fullArticleAccess": true,
+    "sentimentAnalysisAccess": true,
+    "entityAccess": false,
+    "eventAccess": true
+  },
+  "wire": {
+    "id": "EU8JwpsZ8iJehuyPZjMqRz",
+    "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+    "source": {
+      "domain": "news.example.com",
+      "type": "financial_media"
+    },
+    "title": "Example Robotics agrees to acquire Sample Sensors",
+    "summary": "Synthetic summary written for the finlight contract kit.",
+    "language": "en",
+    "media": [
+      {
+        "url": "https://img.example.com/fixtures/lead.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/second.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/third.jpg"
+      }
+    ],
+    "publishedAt": "2026-09-18T12:01:03.000Z",
+    "firstSeenAt": "2026-09-18T12:01:41.000Z",
+    "revisedAt": "2026-09-18T14:30:00.000Z",
+    "availableAt": "2026-09-18T12:03:05.123Z",
+    "countries": [
+      "US"
+    ],
+    "categories": [
+      "markets"
+    ],
+    "sentiment": {
+      "label": "positive",
+      "confidence": 0.9812
+    },
+    "events": [
+      {
+        "type": "mna",
+        "direction": "positive",
+        "importance": "high",
+        "confidence": 0.9
+      }
+    ]
+  },
+  "expect": {
+    "presence": {
+      "id": "value",
+      "link": "value",
+      "source": "value",
+      "title": "value",
+      "summary": "value",
+      "language": "value",
+      "media": "value",
+      "publishedAt": "value",
+      "firstSeenAt": "value",
+      "revisedAt": "value",
+      "availableAt": "value",
+      "countries": "value",
+      "categories": "value",
+      "content": "absent",
+      "sentiment": "value",
+      "companies": "absent",
+      "events": "value",
+      "source.domain": "value",
+      "source.type": "value",
+      "sentiment.label": "value",
+      "sentiment.confidence": "value",
+      "events[0].type": "value",
+      "events[0].direction": "value",
+      "events[0].importance": "value",
+      "events[0].confidence": "value",
+      "events[0].companyIds": "absent"
+    }
+  }
+}

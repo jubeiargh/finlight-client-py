@@ -1,0 +1,102 @@
+{
+  "id": "P-06",
+  "title": "Reordering list values keeps the cursor valid",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "body": {
+      "sources": [
+        "news.example.de",
+        "news.example.com"
+      ],
+      "limit": 2,
+      "cursor": "eyJ2IjoxLCJrIjpbMTc5NTM0MTc4MDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3BhZ2VzLzIwMjYvMTEvaXRlbS0yIl0sIm8iOiJwdWJsaXNoZWRBdDpkZXNjIiwiZiI6IjE5MjFkYmQzIn0"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "articles": [
+        {
+          "id": "xspVFGA3EcGWX2wFkaTsb4",
+          "link": "https://news.example.com/pages/2026/11/item-3",
+          "source": {
+            "domain": "news.example.com",
+            "type": "financial_media"
+          },
+          "title": "Synthetic page item 3",
+          "summary": "Synthetic summary 3.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:02:00.000Z",
+          "firstSeenAt": "2026-11-22T10:02:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:02:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          }
+        },
+        {
+          "id": "m2WAqcYHZ_QrSKfLHIxIb_",
+          "link": "https://news.example.com/pages/2026/11/item-4",
+          "source": {
+            "domain": "news.example.com",
+            "type": "financial_media"
+          },
+          "title": "Synthetic page item 4",
+          "summary": "Synthetic summary 4.",
+          "language": "en",
+          "media": [],
+          "publishedAt": "2026-11-22T10:01:00.000Z",
+          "firstSeenAt": "2026-11-22T10:01:30.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-22T10:01:45.000Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.5
+          }
+        }
+      ],
+      "pagination": {
+        "limit": 2,
+        "returned": 2,
+        "hasMore": true,
+        "nextCursor": "eyJ2IjoxLCJrIjpbMTc5NTM0MTY2MDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3BhZ2VzLzIwMjYvMTEvaXRlbS00Il0sIm8iOiJwdWJsaXNoZWRBdDpkZXNjIiwiZiI6IjE5MjFkYmQzIn0"
+      }
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {
+          "sources": [
+            "news.example.de",
+            "news.example.com"
+          ],
+          "limit": 2,
+          "cursor": "eyJ2IjoxLCJrIjpbMTc5NTM0MTc4MDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3BhZ2VzLzIwMjYvMTEvaXRlbS0yIl0sIm8iOiJwdWJsaXNoZWRBdDpkZXNjIiwiZiI6IjE5MjFkYmQzIn0"
+        }
+      ]
+    }
+  }
+}

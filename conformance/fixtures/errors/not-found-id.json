@@ -1,0 +1,40 @@
+{
+  "id": "E-15",
+  "title": "Unknown article id",
+  "request": {
+    "method": "GET",
+    "path": "/v3/articles/AAAAAAAAAAAAAAAAAAAAAA",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e15"
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/not-found",
+      "title": "Not found",
+      "status": 404,
+      "detail": "No article with id 'AAAAAAAAAAAAAAAAAAAAAA'.",
+      "code": "NOT_FOUND",
+      "requestId": "req-kit-e15"
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.getById",
+      "args": [
+        "AAAAAAAAAAAAAAAAAAAAAA",
+        []
+      ]
+    }
+  },
+  "expect": {
+    "code": "NOT_FOUND",
+    "apiKind": "not_found",
+    "retry": "never"
+  }
+}

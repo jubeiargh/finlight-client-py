@@ -1,0 +1,41 @@
+{
+  "id": "S-11",
+  "title": "Preempted before the first subscribe: the frame comes in v2 form",
+  "endpoint": "enriched",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "action": "preempted",
+        "reason": "connection_limit",
+        "newLeaseId": "00000000-0000-4000-8000-00000000beef",
+        "timestamp": 1795467845123
+      }
+    },
+    {
+      "step": "serverCloses",
+      "note": "the server drops the connection (API Gateway DeleteConnection)"
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "PreemptedError",
+      "reason": "connection_limit",
+      "newLeaseId": "00000000-0000-4000-8000-00000000beef"
+    },
+    {
+      "step": "expect",
+      "outcome": "noReconnect"
+    }
+  ]
+}

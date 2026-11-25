@@ -1,0 +1,26 @@
+{
+  "id": "S-23",
+  "title": "Dial refused: connection limit reached, no takeover",
+  "endpoint": "enriched",
+  "note": "Most WebSocket libraries expose only the status of a refused upgrade; the body is given for those that expose it.",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_00000000000000000000000000000000000000000000000000000000000000a2"
+      },
+      "server": {
+        "status": 403,
+        "body": "{\"message\":\"Too many concurrent connections. Use x-takeover: true header to replace an existing connection.\"}"
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "reconnect",
+      "backoff": "long",
+      "firstRetryMinMs": 60000,
+      "hint": "takeover"
+    }
+  ]
+}

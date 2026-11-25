@@ -1,0 +1,40 @@
+{
+  "id": "E-04",
+  "title": "Empty languages array",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e04"
+    },
+    "body": {
+      "languages": []
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "1 request field is not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-kit-e04",
+      "errors": [
+        {
+          "field": "languages",
+          "issue": "languages should not be empty"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

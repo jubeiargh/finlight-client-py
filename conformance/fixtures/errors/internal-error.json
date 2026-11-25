@@ -1,0 +1,40 @@
+{
+  "id": "E-20",
+  "title": "Server failure",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e20"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/internal-error",
+      "title": "Internal server error",
+      "status": 500,
+      "detail": "The request could not be processed.",
+      "code": "INTERNAL_ERROR",
+      "requestId": "req-kit-e20"
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {}
+      ]
+    }
+  },
+  "expect": {
+    "code": "INTERNAL_ERROR",
+    "apiKind": "internal_error",
+    "retry": "backoff"
+  }
+}

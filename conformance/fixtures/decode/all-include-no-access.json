@@ -1,0 +1,71 @@
+{
+  "id": "D-04",
+  "title": "Every include requested, no entitlement",
+  "channel": "enriched",
+  "include": [
+    "content",
+    "companies",
+    "events"
+  ],
+  "entitlements": {
+    "fullArticleAccess": false,
+    "sentimentAnalysisAccess": false,
+    "entityAccess": false,
+    "eventAccess": false
+  },
+  "wire": {
+    "id": "EU8JwpsZ8iJehuyPZjMqRz",
+    "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+    "source": {
+      "domain": "news.example.com",
+      "type": "financial_media"
+    },
+    "title": "Example Robotics agrees to acquire Sample Sensors",
+    "summary": "Synthetic summary written for the finlight contract kit.",
+    "language": "en",
+    "media": [
+      {
+        "url": "https://img.example.com/fixtures/lead.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/second.jpg"
+      },
+      {
+        "url": "https://img.example.com/fixtures/third.jpg"
+      }
+    ],
+    "publishedAt": "2026-09-18T12:01:03.000Z",
+    "firstSeenAt": "2026-09-18T12:01:41.000Z",
+    "revisedAt": "2026-09-18T14:30:00.000Z",
+    "availableAt": "2026-09-18T12:03:05.123Z",
+    "countries": [
+      "US"
+    ],
+    "categories": [
+      "markets"
+    ]
+  },
+  "expect": {
+    "presence": {
+      "id": "value",
+      "link": "value",
+      "source": "value",
+      "title": "value",
+      "summary": "value",
+      "language": "value",
+      "media": "value",
+      "publishedAt": "value",
+      "firstSeenAt": "value",
+      "revisedAt": "value",
+      "availableAt": "value",
+      "countries": "value",
+      "categories": "value",
+      "content": "absent",
+      "sentiment": "absent",
+      "companies": "absent",
+      "events": "absent",
+      "source.domain": "value",
+      "source.type": "value"
+    }
+  }
+}

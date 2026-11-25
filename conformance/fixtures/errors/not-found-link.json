@@ -1,0 +1,41 @@
+{
+  "id": "E-16",
+  "title": "Unknown article link",
+  "request": {
+    "method": "GET",
+    "path": "/v3/articles/by-link",
+    "query": "link=https%3A%2F%2Fnews.example.com%2Fmissing",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e16"
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/not-found",
+      "title": "Not found",
+      "status": 404,
+      "detail": "No article with link 'https://news.example.com/missing'.",
+      "code": "NOT_FOUND",
+      "requestId": "req-kit-e16"
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.getByLink",
+      "args": [
+        "https://news.example.com/missing",
+        []
+      ]
+    }
+  },
+  "expect": {
+    "code": "NOT_FOUND",
+    "apiKind": "not_found",
+    "retry": "never"
+  }
+}

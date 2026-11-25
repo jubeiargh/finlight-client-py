@@ -1,0 +1,60 @@
+{
+  "id": "E-01",
+  "title": "Unknown enum value",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e01"
+    },
+    "body": {
+      "eventTypes": [
+        "earnigns"
+      ]
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/validation-failed",
+      "title": "Validation failed",
+      "status": 400,
+      "detail": "1 request field is not valid.",
+      "code": "VALIDATION_FAILED",
+      "requestId": "req-kit-e01",
+      "errors": [
+        {
+          "field": "eventTypes",
+          "issue": "each value in eventTypes must be one of the following values: earnings, guidance, mna, ipo_listing, capital_action, rating_action, management_change, legal, regulatory, bankruptcy_distress, product_partnership, investment_expansion, operational_incident, labor_restructuring, macro, geopolitics",
+          "allowedValues": [
+            "earnings",
+            "guidance",
+            "mna",
+            "ipo_listing",
+            "capital_action",
+            "rating_action",
+            "management_change",
+            "legal",
+            "regulatory",
+            "bankruptcy_distress",
+            "product_partnership",
+            "investment_expansion",
+            "operational_incident",
+            "labor_restructuring",
+            "macro",
+            "geopolitics"
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "VALIDATION_FAILED",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

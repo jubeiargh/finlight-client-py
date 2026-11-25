@@ -1,0 +1,144 @@
+{
+  "id": "S-05",
+  "title": "An unknown event name arrives",
+  "endpoint": "enriched",
+  "synthetic": [
+    "steps[3].frame: a future event, not sent by the server today"
+  ],
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1"
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.draining",
+        "payloadVersion": 3,
+        "data": {
+          "inMs": 30000
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "logOnly"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "article.created",
+        "payloadVersion": 3,
+        "data": {
+          "id": "EU8JwpsZ8iJehuyPZjMqRz",
+          "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+          "source": {
+            "domain": "news.example.com",
+            "type": "financial_media"
+          },
+          "title": "Example Robotics agrees to acquire Sample Sensors",
+          "summary": "Synthetic summary written for the finlight contract kit.",
+          "language": "en",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/lead.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/second.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/third.jpg"
+            }
+          ],
+          "publishedAt": "2026-09-18T12:01:03.000Z",
+          "firstSeenAt": "2026-09-18T12:01:41.000Z",
+          "revisedAt": "2026-09-18T14:30:00.000Z",
+          "availableAt": "2026-09-18T12:03:05.123Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "positive",
+            "confidence": 0.9812
+          },
+          "companies": [
+            {
+              "companyId": 900001,
+              "name": "Example Robotics Inc.",
+              "isin": "ZZ0000000001",
+              "primaryListing": {
+                "ticker": "XMPL",
+                "mic": "XNAS",
+                "country": "US"
+              },
+              "confidence": 0.97,
+              "role": "acquirer",
+              "relevance": 0.95
+            },
+            {
+              "companyId": 900002,
+              "name": "Sample Sensors GmbH",
+              "isin": null,
+              "primaryListing": null,
+              "confidence": 0.88,
+              "role": "target",
+              "relevance": 0.9
+            }
+          ],
+          "events": [
+            {
+              "type": "mna",
+              "direction": "positive",
+              "importance": "high",
+              "confidence": 0.9,
+              "companyIds": [
+                900001,
+                900002
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "item",
+      "kind": "created"
+    }
+  ]
+}

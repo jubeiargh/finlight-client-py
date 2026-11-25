@@ -1,0 +1,39 @@
+{
+  "id": "E-17",
+  "title": "Unknown company id",
+  "request": {
+    "method": "GET",
+    "path": "/v3/companies/999999",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e17"
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/not-found",
+      "title": "Not found",
+      "status": 404,
+      "detail": "No company with id '999999'.",
+      "code": "NOT_FOUND",
+      "requestId": "req-kit-e17"
+    }
+  },
+  "server": {
+    "received": {
+      "method": "companies.getById",
+      "args": [
+        999999
+      ]
+    }
+  },
+  "expect": {
+    "code": "NOT_FOUND",
+    "apiKind": "not_found",
+    "retry": "never"
+  }
+}

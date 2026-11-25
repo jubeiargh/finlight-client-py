@@ -1,0 +1,10 @@
+{
+  "note": "Client retry policy (one model for every SDK). Classified by status, code and, for 429, the limitType member. expect.code NESTJS_FALLBACK means: no problem code, the fallback form {statusCode, message}. expect.apiKind is the error kind the client reports (other = unknown code or no code).",
+  "classes": {
+    "never": "no retry: 400, 401, 403, 404, and 429 with limitType \"monthly\" or a limitType the client does not know. A REST call never waits for a new quota period: a monthly 429 fails at once, inside searchAll too.",
+    "once-after-burst-wait": "one retry after exactly Retry-After seconds, 10 when the header is missing: 429 with limitType \"burst\". On by default, can be turned off (then the error is thrown at once); not counted against maxRetries.",
+    "backoff": "exponential backoff: 5xx, non-JSON gateway errors and network errors, POST search included"
+  },
+  "streams": "WebSocket outcomes are in ws-sessions/. An exhausted quota (dial 403 \"quota exceeded\", connection.preempted with reason quota_exceeded) redials once per hour by default (quotaReconnect, quotaReconnectInterval) and passes every wait to the onQuotaWait hook; with quotaReconnect off it is terminal.",
+  "requestId": "one X-Request-Id per logical call, reused on every retry"
+}

@@ -1,0 +1,87 @@
+{
+  "id": "F-04",
+  "synthetic": true,
+  "note": "Synthetic: the server does not send these additions today. They model additive changes a v3 client must tolerate.",
+  "items": [
+    {
+      "kind": "webhook.event",
+      "wire": {
+        "eventId": "evt_dNUmEJrbL57wBuN8Rc_4aj",
+        "event": "article.retracted",
+        "occurredAt": "2026-09-18T12:03:05.123Z",
+        "payloadVersion": 3,
+        "subscriptionId": "00000000-0000-4000-8000-000000000001",
+        "data": {
+          "id": "EU8JwpsZ8iJehuyPZjMqRz",
+          "link": "https://news.example.com/markets/2026/09/18/example-robotics-to-acquire-sample-sensors",
+          "source": {
+            "domain": "news.example.com",
+            "type": "financial_media"
+          },
+          "title": "Example Robotics agrees to acquire Sample Sensors",
+          "summary": "Synthetic summary written for the finlight contract kit.",
+          "language": "en",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/lead.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/second.jpg"
+            },
+            {
+              "url": "https://img.example.com/fixtures/third.jpg"
+            }
+          ],
+          "publishedAt": "2026-09-18T12:01:03.000Z",
+          "firstSeenAt": "2026-09-18T12:01:41.000Z",
+          "revisedAt": "2026-09-18T14:30:00.000Z",
+          "availableAt": "2026-09-18T12:03:05.123Z",
+          "countries": [
+            "US"
+          ],
+          "categories": [
+            "markets"
+          ],
+          "sentiment": {
+            "label": "positive",
+            "confidence": 0.9812
+          }
+        }
+      },
+      "expect": "constructEvent returns the event with event = \"article.retracted\" kept as a string; no error"
+    },
+    {
+      "kind": "problem.code",
+      "status": 402,
+      "headers": {
+        "content-type": "application/problem+json"
+      },
+      "wire": {
+        "type": "https://docs.finlight.me/errors/payment-required",
+        "title": "Payment required",
+        "status": 402,
+        "detail": "Synthetic future error.",
+        "code": "PAYMENT_REQUIRED",
+        "requestId": "req_synthetic"
+      },
+      "expect": "base FinlightApiError (no subclass) with code \"PAYMENT_REQUIRED\", status 402, requestId; not retried"
+    },
+    {
+      "kind": "problem.limitType",
+      "status": 429,
+      "headers": {
+        "content-type": "application/problem+json"
+      },
+      "wire": {
+        "type": "https://docs.finlight.me/errors/rate-limited",
+        "title": "Too many requests",
+        "status": 429,
+        "detail": "Synthetic future limit.",
+        "code": "RATE_LIMITED",
+        "requestId": "req_synthetic",
+        "limitType": "daily"
+      },
+      "expect": "RateLimitedError (apiKind rate_limited) with limitType \"daily\" kept as a string; not retried (retry class never)"
+    }
+  ]
+}

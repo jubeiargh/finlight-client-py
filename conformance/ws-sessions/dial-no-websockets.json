@@ -1,0 +1,26 @@
+{
+  "id": "S-22",
+  "title": "Dial refused: plan without WebSockets",
+  "endpoint": "enriched",
+  "note": "Most WebSocket libraries expose only the status of a refused upgrade; the body is given for those that expose it.",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_00000000000000000000000000000000000000000000000000000000000000a1"
+      },
+      "server": {
+        "status": 403,
+        "body": "{\"message\":\"Your subscription does not include WebSockets\"}"
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "terminalError",
+      "error": "FinlightApiError",
+      "apiKind": "forbidden",
+      "status": 403
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "E-25",
+  "title": "Cursor issued for another sort order",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e25"
+    },
+    "body": {
+      "cursor": "eyJ2IjoxLCJrIjpbMTc2MzgwMDAwMDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3giXSwibyI6InB1Ymxpc2hlZEF0OmFzYyIsImYiOiIwMDAwMDAwMCJ9"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/cursor-mismatch",
+      "title": "Cursor mismatch",
+      "status": 400,
+      "detail": "The cursor was issued for sort order 'publishedAt:asc', the request asks for 'publishedAt:desc'.",
+      "code": "CURSOR_MISMATCH",
+      "requestId": "req-kit-e25",
+      "errors": [
+        {
+          "field": "cursor",
+          "issue": "The cursor was issued for sort order 'publishedAt:asc', the request asks for 'publishedAt:desc'."
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {
+          "cursor": "eyJ2IjoxLCJrIjpbMTc2MzgwMDAwMDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3giXSwibyI6InB1Ymxpc2hlZEF0OmFzYyIsImYiOiIwMDAwMDAwMCJ9"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "CURSOR_MISMATCH",
+    "apiKind": "cursor_mismatch",
+    "retry": "never"
+  }
+}

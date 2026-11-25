@@ -1,0 +1,253 @@
+{
+  "id": "S-04",
+  "title": "article.created then article.updated for the same id, then an exact duplicate",
+  "endpoint": "enriched",
+  "steps": [
+    {
+      "step": "dial",
+      "url": "wss://wss.finlight.me",
+      "expectRequestHeaders": {
+        "x-api-key": "sk_0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "server": {
+        "status": 101
+      }
+    },
+    {
+      "step": "clientSends",
+      "frame": {
+        "payloadVersion": 3,
+        "include": [
+          "companies",
+          "events"
+        ],
+        "query": "ticker:XMPL",
+        "language": "en",
+        "includeUpdates": true,
+        "clientNonce": "c-kit-1"
+      }
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "connection.admitted",
+        "payloadVersion": 3,
+        "data": {
+          "leaseId": "00000000-0000-4000-8000-00000000feed",
+          "serverNow": 1795467845123,
+          "clientNonce": "c-kit-1"
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "admitted"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "article.created",
+        "payloadVersion": 3,
+        "data": {
+          "id": "YkxUciPutwQkocuivOWP8W",
+          "link": "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+          "source": {
+            "domain": "news.example.de",
+            "type": null
+          },
+          "title": "Beispiel-Werke meldet Rekordquartal – Ümsatz +12 % (示例 · テスト)",
+          "summary": "Synthetische Zusammenfassung für das finlight-Vertragskit: äöü ß € 漢字.",
+          "language": "de",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/de-lead.jpg"
+            }
+          ],
+          "publishedAt": "2026-11-23T20:58:00.000Z",
+          "firstSeenAt": "2026-11-23T20:59:12.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-23T21:00:30.000Z",
+          "countries": [
+            "DE"
+          ],
+          "categories": [
+            "business"
+          ],
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.6
+          },
+          "companies": [
+            {
+              "companyId": 900004,
+              "name": "Beispiel-Werke AG",
+              "isin": "ZZ0000000004",
+              "primaryListing": {
+                "ticker": "BSPW",
+                "mic": "XETR",
+                "country": "DE"
+              },
+              "confidence": 0.93,
+              "role": "subject",
+              "relevance": 0.99
+            }
+          ],
+          "events": [
+            {
+              "type": "earnings",
+              "direction": "positive",
+              "importance": "medium",
+              "confidence": 0.81,
+              "companyIds": [
+                900004
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "item",
+      "kind": "created",
+      "id": "YkxUciPutwQkocuivOWP8W"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "article.updated",
+        "payloadVersion": 3,
+        "data": {
+          "id": "YkxUciPutwQkocuivOWP8W",
+          "link": "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+          "source": {
+            "domain": "news.example.de",
+            "type": null
+          },
+          "title": "Beispiel-Werke meldet Rekordquartal – Ümsatz +12 % (示例 · テスト)",
+          "summary": "Synthetische Zusammenfassung für das finlight-Vertragskit: äöü ß € 漢字.",
+          "language": "de",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/de-lead.jpg"
+            }
+          ],
+          "publishedAt": "2026-11-23T20:58:00.000Z",
+          "firstSeenAt": "2026-11-23T20:59:12.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-23T21:00:30.000Z",
+          "countries": [
+            "DE"
+          ],
+          "categories": [
+            "business"
+          ],
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.6
+          },
+          "companies": [
+            {
+              "companyId": 900004,
+              "name": "Beispiel-Werke AG",
+              "isin": "ZZ0000000004",
+              "primaryListing": {
+                "ticker": "BSPW",
+                "mic": "XETR",
+                "country": "DE"
+              },
+              "confidence": 0.93,
+              "role": "subject",
+              "relevance": 0.99
+            }
+          ],
+          "events": [
+            {
+              "type": "earnings",
+              "direction": "positive",
+              "importance": "medium",
+              "confidence": 0.81,
+              "companyIds": [
+                900004
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "item",
+      "kind": "updated",
+      "id": "YkxUciPutwQkocuivOWP8W"
+    },
+    {
+      "step": "serverSends",
+      "frame": {
+        "event": "article.updated",
+        "payloadVersion": 3,
+        "data": {
+          "id": "YkxUciPutwQkocuivOWP8W",
+          "link": "https://news.example.de/wirtschaft/beispiel-werke-rekordquartal",
+          "source": {
+            "domain": "news.example.de",
+            "type": null
+          },
+          "title": "Beispiel-Werke meldet Rekordquartal – Ümsatz +12 % (示例 · テスト)",
+          "summary": "Synthetische Zusammenfassung für das finlight-Vertragskit: äöü ß € 漢字.",
+          "language": "de",
+          "media": [
+            {
+              "url": "https://img.example.com/fixtures/de-lead.jpg"
+            }
+          ],
+          "publishedAt": "2026-11-23T20:58:00.000Z",
+          "firstSeenAt": "2026-11-23T20:59:12.000Z",
+          "revisedAt": null,
+          "availableAt": "2026-11-23T21:00:30.000Z",
+          "countries": [
+            "DE"
+          ],
+          "categories": [
+            "business"
+          ],
+          "sentiment": {
+            "label": "neutral",
+            "confidence": 0.6
+          },
+          "companies": [
+            {
+              "companyId": 900004,
+              "name": "Beispiel-Werke AG",
+              "isin": "ZZ0000000004",
+              "primaryListing": {
+                "ticker": "BSPW",
+                "mic": "XETR",
+                "country": "DE"
+              },
+              "confidence": 0.93,
+              "role": "subject",
+              "relevance": 0.99
+            }
+          ],
+          "events": [
+            {
+              "type": "earnings",
+              "direction": "positive",
+              "importance": "medium",
+              "confidence": 0.81,
+              "companyIds": [
+                900004
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "expect",
+      "outcome": "duplicateDropped",
+      "id": "YkxUciPutwQkocuivOWP8W"
+    }
+  ]
+}

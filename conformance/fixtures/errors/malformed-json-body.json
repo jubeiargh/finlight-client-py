@@ -1,0 +1,29 @@
+{
+  "id": "E-21",
+  "title": "Malformed JSON body (NestJS fallback form)",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e21"
+    },
+    "rawBody": "{\"query\": "
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "message": "Unexpected end of JSON input",
+      "error": "Bad Request",
+      "statusCode": 400
+    }
+  },
+  "expect": {
+    "code": "NESTJS_FALLBACK",
+    "apiKind": "validation_failed",
+    "retry": "never"
+  }
+}

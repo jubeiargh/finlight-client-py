@@ -1,0 +1,34 @@
+{
+  "id": "E-19",
+  "title": "Burst limit reached",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000004",
+      "X-Request-Id": "req-kit-e19"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8",
+      "retry-after": "7"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/rate-limited",
+      "title": "Too many requests",
+      "status": 429,
+      "detail": "Throttling Exception: Exceeded rate limit of 5 requests per 10 seconds.",
+      "code": "RATE_LIMITED",
+      "requestId": "req-kit-e19",
+      "limitType": "burst"
+    }
+  },
+  "expect": {
+    "code": "RATE_LIMITED",
+    "apiKind": "rate_limited",
+    "retry": "once-after-burst-wait"
+  }
+}

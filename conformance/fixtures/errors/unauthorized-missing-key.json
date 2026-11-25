@@ -1,0 +1,31 @@
+{
+  "id": "E-12",
+  "title": "No API key",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-Request-Id": "req-kit-e12"
+    },
+    "body": {}
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/unauthorized",
+      "title": "Unauthorized",
+      "status": 401,
+      "detail": "Unauthorized",
+      "code": "UNAUTHORIZED",
+      "requestId": "req-kit-e12"
+    }
+  },
+  "expect": {
+    "code": "UNAUTHORIZED",
+    "apiKind": "unauthorized",
+    "retry": "never"
+  }
+}

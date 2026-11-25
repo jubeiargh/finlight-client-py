@@ -1,0 +1,26 @@
+{
+  "id": "W-11",
+  "title": "Timestamp in unix seconds instead of ISO 8601",
+  "secret": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "verify": {
+    "now": "2026-11-23T21:04:05.123Z",
+    "toleranceSeconds": 300
+  },
+  "request": {
+    "method": "POST",
+    "url": "https://hooks.example.com/finlight",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Webhook-Signature": "sha256=9c6e511eefcafedbc5c6df195cf93e2e7a2e7eb67b6960c3a7662cfb6fb9237b",
+      "X-Webhook-Timestamp": "1795467845"
+    },
+    "rawBody": "{\"eventId\":\"evt_9_Rx6TwzctfS0RigczzhjK\",\"event\":\"article.created\",\"occurredAt\":\"2026-11-23T21:00:30.000Z\",\"payloadVersion\":3,\"subscriptionId\":\"00000000-0000-4000-8000-00000000c0de\",\"data\":{\"id\":\"YkxUciPutwQkocuivOWP8W\",\"link\":\"https://news.example.de/wirtschaft/beispiel-werke-rekordquartal\",\"source\":{\"domain\":\"news.example.de\",\"type\":null},\"title\":\"Beispiel-Werke meldet Rekordquartal – Ümsatz +12 % (示例 · テスト)\",\"summary\":\"Synthetische Zusammenfassung für das finlight-Vertragskit: äöü ß € 漢字.\",\"language\":\"de\",\"media\":[{\"url\":\"https://img.example.com/fixtures/de-lead.jpg\"}],\"publishedAt\":\"2026-11-23T20:58:00.000Z\",\"firstSeenAt\":\"2026-11-23T20:59:12.000Z\",\"revisedAt\":null,\"availableAt\":\"2026-11-23T21:00:30.000Z\",\"countries\":[\"DE\"],\"categories\":[\"business\"],\"content\":\"Synthetischer Text. Kein echter Artikel. Emoji-frei, aber mit Umlauten: Größe, Maß.\",\"sentiment\":{\"label\":\"neutral\",\"confidence\":0.6},\"companies\":[{\"companyId\":900004,\"name\":\"Beispiel-Werke AG\",\"isin\":\"ZZ0000000004\",\"primaryListing\":{\"ticker\":\"BSPW\",\"mic\":\"XETR\",\"country\":\"DE\"},\"confidence\":0.93,\"role\":\"subject\",\"relevance\":0.99}],\"events\":[{\"type\":\"earnings\",\"direction\":\"positive\",\"importance\":\"medium\",\"confidence\":0.81,\"companyIds\":[900004]}]}}",
+    "rawBodyBase64": "eyJldmVudElkIjoiZXZ0XzlfUng2VHd6Y3RmUzBSaWdjenpoaksiLCJldmVudCI6ImFydGljbGUuY3JlYXRlZCIsIm9jY3VycmVkQXQiOiIyMDI2LTExLTIzVDIxOjAwOjMwLjAwMFoiLCJwYXlsb2FkVmVyc2lvbiI6Mywic3Vic2NyaXB0aW9uSWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMGMwZGUiLCJkYXRhIjp7ImlkIjoiWWt4VWNpUHV0d1Frb2N1aXZPV1A4VyIsImxpbmsiOiJodHRwczovL25ld3MuZXhhbXBsZS5kZS93aXJ0c2NoYWZ0L2JlaXNwaWVsLXdlcmtlLXJla29yZHF1YXJ0YWwiLCJzb3VyY2UiOnsiZG9tYWluIjoibmV3cy5leGFtcGxlLmRlIiwidHlwZSI6bnVsbH0sInRpdGxlIjoiQmVpc3BpZWwtV2Vya2UgbWVsZGV0IFJla29yZHF1YXJ0YWwg4oCTIMOcbXNhdHogKzEyICUgKOekuuS+iyDCtyDjg4bjgrnjg4gpIiwic3VtbWFyeSI6IlN5bnRoZXRpc2NoZSBadXNhbW1lbmZhc3N1bmcgZsO8ciBkYXMgZmlubGlnaHQtVmVydHJhZ3NraXQ6IMOkw7bDvCDDnyDigqwg5ryi5a2XLiIsImxhbmd1YWdlIjoiZGUiLCJtZWRpYSI6W3sidXJsIjoiaHR0cHM6Ly9pbWcuZXhhbXBsZS5jb20vZml4dHVyZXMvZGUtbGVhZC5qcGcifV0sInB1Ymxpc2hlZEF0IjoiMjAyNi0xMS0yM1QyMDo1ODowMC4wMDBaIiwiZmlyc3RTZWVuQXQiOiIyMDI2LTExLTIzVDIwOjU5OjEyLjAwMFoiLCJyZXZpc2VkQXQiOm51bGwsImF2YWlsYWJsZUF0IjoiMjAyNi0xMS0yM1QyMTowMDozMC4wMDBaIiwiY291bnRyaWVzIjpbIkRFIl0sImNhdGVnb3JpZXMiOlsiYnVzaW5lc3MiXSwiY29udGVudCI6IlN5bnRoZXRpc2NoZXIgVGV4dC4gS2VpbiBlY2h0ZXIgQXJ0aWtlbC4gRW1vamktZnJlaSwgYWJlciBtaXQgVW1sYXV0ZW46IEdyw7bDn2UsIE1hw58uIiwic2VudGltZW50Ijp7ImxhYmVsIjoibmV1dHJhbCIsImNvbmZpZGVuY2UiOjAuNn0sImNvbXBhbmllcyI6W3siY29tcGFueUlkIjo5MDAwMDQsIm5hbWUiOiJCZWlzcGllbC1XZXJrZSBBRyIsImlzaW4iOiJaWjAwMDAwMDAwMDQiLCJwcmltYXJ5TGlzdGluZyI6eyJ0aWNrZXIiOiJCU1BXIiwibWljIjoiWEVUUiIsImNvdW50cnkiOiJERSJ9LCJjb25maWRlbmNlIjowLjkzLCJyb2xlIjoic3ViamVjdCIsInJlbGV2YW5jZSI6MC45OX1dLCJldmVudHMiOlt7InR5cGUiOiJlYXJuaW5ncyIsImRpcmVjdGlvbiI6InBvc2l0aXZlIiwiaW1wb3J0YW5jZSI6Im1lZGl1bSIsImNvbmZpZGVuY2UiOjAuODEsImNvbXBhbnlJZHMiOls5MDAwMDRdfV19fQ=="
+  },
+  "expect": {
+    "signatureValid": false,
+    "outcome": "error",
+    "error": "WebhookVerificationError",
+    "reason": "unparseable_timestamp"
+  }
+}

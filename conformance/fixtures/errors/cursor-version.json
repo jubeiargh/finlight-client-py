@@ -1,0 +1,50 @@
+{
+  "id": "E-11",
+  "title": "Cursor of an unsupported version",
+  "request": {
+    "method": "POST",
+    "path": "/v3/articles/search",
+    "headers": {
+      "X-API-KEY": "sk_0000000000000000000000000000000000000000000000000000000000000001",
+      "X-Request-Id": "req-kit-e11"
+    },
+    "body": {
+      "cursor": "eyJ2IjoyLCJrIjpbMTc2MzgwMDAwMDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3giXSwibyI6InB1Ymxpc2hlZEF0OmRlc2MiLCJmIjoiMDAwMDAwMDAifQ"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/problem+json; charset=utf-8"
+    },
+    "body": {
+      "type": "https://docs.finlight.me/errors/cursor-invalid",
+      "title": "Cursor invalid",
+      "status": 400,
+      "detail": "Unsupported cursor version '2'.",
+      "code": "CURSOR_INVALID",
+      "requestId": "req-kit-e11",
+      "errors": [
+        {
+          "field": "cursor",
+          "issue": "Unsupported cursor version '2'."
+        }
+      ]
+    }
+  },
+  "server": {
+    "received": {
+      "method": "articles.search",
+      "args": [
+        {
+          "cursor": "eyJ2IjoyLCJrIjpbMTc2MzgwMDAwMDAwMCwiaHR0cHM6Ly9uZXdzLmV4YW1wbGUuY29tL3giXSwibyI6InB1Ymxpc2hlZEF0OmRlc2MiLCJmIjoiMDAwMDAwMDAifQ"
+        }
+      ]
+    }
+  },
+  "expect": {
+    "code": "CURSOR_INVALID",
+    "apiKind": "cursor_invalid",
+    "retry": "never"
+  }
+}
