@@ -97,10 +97,16 @@ Response 200: `{"articles": Article[], "pagination": {"limit", "returned", "hasM
   comma form.
 - 200 `{"article": Article}`. 404 `NOT_FOUND` also for articles indexed before ids were introduced; those are
   reachable by link.
+- Access is checked like a search: an article from a custom source needs that source granted to the
+  subscription, and one of its timestamps (`publishedAt`, `firstSeenAt`, `revisedAt`, `availableAt`) must lie
+  in the plan's date window. Otherwise 404 `NOT_FOUND`, the same answer as for an unknown article. Default and
+  non-default sources need no opt-in for a lookup.
 
 ### 2.4 `GET /v3/articles/by-link?link=<url-encoded>&include=...`
 
-- `link` is required and must equal the delivered `link` exactly. Reaches every article.
+- `link` is required and must equal the delivered `link` exactly.
+- Same access check as 2.3 (custom-source grant, plan date window); an article that fails it is 404
+  `NOT_FOUND`, like an unknown link.
 - 200 `{"article": Article}`, 404 `NOT_FOUND`.
 
 ### 2.5 The article object

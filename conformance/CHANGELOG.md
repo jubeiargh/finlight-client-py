@@ -10,6 +10,9 @@
 - R-08: without a caller `ifNoneMatch` no `If-None-Match` header is sent.
 - R-09: the clause "when the SDK revalidates its own cached copy it returns that record" is removed.
 - contract.md 2.6: states that clients do not cache and that a 304 also costs 1 credit.
+- contract.md 2.3 and 2.4: the article lookups no longer "reach every article". By id and by link, an article
+  from a custom source needs the custom-source grant, and the article must lie in the plan's date window;
+  otherwise 404 `NOT_FOUND`, the same as an unknown article. Wire shapes are unchanged.
 
 ## 3.0.0-rc.5 (2026-11-24)
 
